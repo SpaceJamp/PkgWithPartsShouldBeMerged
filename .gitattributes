@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: MIT
+# Keep shell scripts and CI definitions LF-only: CRLF breaks "/bin/sh" scripts
+# with "bad interpreter" errors on Linux and macOS.
+*.sh   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+.gitignore      text eol=lf
+.gitattributes  text eol=lf
+CMakeLists.txt  text eol=lf
+
+# Windows scripts and sources that the MSVC toolchain reads are happier with CRLF.
+*.ps1 text eol=crlf
+*.rc  text eol=crlf
+*.rc.in text eol=crlf
+*.manifest text eol=crlf
+*.manifest.in text eol=crlf
+
+# Binary-ish assets: never touch line endings.
+*.png binary

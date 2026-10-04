@@ -1,0 +1,83 @@
+# SPDX-License-Identifier: MIT
+name: build
+
+# No license has been granted for this project - see LICENSE.md.
+
+on:
+  push:
+    branches: [master, main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    name: Windows ${{ matrix.arch }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+          - arch: x86
+    steps:
+      - uses: actions/checkout@v4
+
+      # The runner image does not expose a full Visual Studio instance to
+      # CMake's "Visual Studio" generator, so the compiler environment is set up
+      # explicitly and Ninja is used instead. This also exercises the
+      # single-config Release default in CMakeLists.txt.
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.arch }}
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPKG_MERGE_WERROR=ON
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Smoke test
+        shell: pwsh
+        run: ./tests/smoke_test.ps1 -Exe build/pkg_merge.exe -WorkRoot "${{ runner.temp }}/smoke-${{ matrix.arch }}"
+
+      - name: Robustness test
+        shell: pwsh
+        run: ./tests/robustness_test.ps1 -Exe build/pkg_merge.exe -WorkRoot "${{ runner.temp }}/hostile-${{ matrix.arch }}"
+
+      # Guards against shipping a Debug build or losing ASLR/DEP/CFG.
+      - name: Verify binary
+        run: python tools/verify_binary.py build/pkg_merge.exe 3.1.0
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pkg_merge-windows-${{ matrix.arch }}
+          path: build/pkg_merge.exe
+          if-no-files-found: error
+
+  linux:
+    name: Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # No packages are needed: the project links no third-party code, and the
+      # Linux folder dialog is found at run time rather than linked.
+      - name: Configure
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DPKG_MERGE_WERROR=ON
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Smoke test
+        run: bash ./tests/smoke_test.sh build/pkg_merge
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pkg_merge-linux
+          path: build/pkg_merge
+          if-no-files-found: error
