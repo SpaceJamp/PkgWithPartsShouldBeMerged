@@ -273,22 +273,6 @@ be directed.
 
 ---
 
-## Credits and acknowledgements
-
-This tool would not exist without the people who built it first, and none of this
-work is theirs to lose:
-
-- **[Tustin & 0x199](https://github.com/Tustin/pkg-merge)** — the original
-  `pkg-merge`, and the idea this tool implements.
-- **[aldo-o](https://github.com/aldo-o/pkg-merge)** — the fork that brought it to
-  macOS and gave it a command line.
-- **[btzy](https://github.com/btzy/nativefiledialog-extended)** — the folder
-  dialog the earlier versions used.
-
-If you use this, please pass the credit on.
-
----
-
 ## License
 
 [GPL-3.0-only](LICENSE) — see [Why a rewrite](#why-a-rewrite) above for provenance and scope.
