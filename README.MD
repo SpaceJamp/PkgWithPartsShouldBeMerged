@@ -228,7 +228,7 @@ by re-running CMake; delete it and start over.
 | CMake option | Default | Meaning |
 | --- | --- | --- |
 | `PKG_MERGE_WERROR` | `OFF` | Treat compiler warnings as errors. CI configures with this on. |
-| `PKG_MERGE_COPYRIGHT` | credits the original authors | Text embedded in the Windows version resource. |
+| `PKG_MERGE_COPYRIGHT` | `Copyright (c) 2026 SpaceJamp - GPL-3.0-only.` | Text embedded in the Windows version resource. |
 
 ### Keeping your copy up to date
 

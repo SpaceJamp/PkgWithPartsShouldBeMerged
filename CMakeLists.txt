@@ -43,7 +43,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(PKG_MERGE_WERROR "Treat compiler warnings as errors" OFF)
 
 # Embedded in the Windows version resource.
-set(PKG_MERGE_COPYRIGHT "Copyright (c) 2026 SpaceJamp - GPL-3.0-only. Original pkg-merge by Tustin & 0x199."
+set(PKG_MERGE_COPYRIGHT "Copyright (c) 2026 SpaceJamp - GPL-3.0-only."
     CACHE STRING "Copyright string embedded in the Windows version resource")
 
 # ---------------------------------------------------------------------------
