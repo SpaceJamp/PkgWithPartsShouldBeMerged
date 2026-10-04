@@ -133,77 +133,119 @@ tool produced earlier, are ignored.
 
 ## Building from source
 
-CMake 3.24 or newer and a C++20 compiler (Visual Studio 2022 on Windows, GCC or
-Clang on Linux).
+### What you need
 
-**Windows, Visual Studio installed** — CMake finds Visual Studio by itself, no
-developer prompt needed:
+| | |
+| --- | --- |
+| **CMake** | 3.24 or newer — `cmake --version` |
+| **Windows** | Visual Studio 2022, or the Build Tools with the C++ workload |
+| **Linux** | GCC or Clang with C++20 — nothing else, no `-dev` packages to install |
+
+There is **no third-party code** in this project and Linux needs no GUI or
+toolkit development packages, so there is nothing to install before configuring.
+
+### Windows
+
+From an ordinary terminal — CMake finds Visual Studio by itself, so no developer
+prompt is needed:
 
 ```bat
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64
 cmake --build build --config Release
 ```
 
-Use `-A Win32` for the 32-bit build. Multi-config generators ignore
-`CMAKE_BUILD_TYPE`, so `--config Release` is what selects the build type.
+That produces **`build\Release\pkg_merge.exe`**. Use `-A Win32` instead of
+`-A x64` for the 32-bit build.
 
-**Linux, any Makefile generator** — no extra packages:
+### Linux
 
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
 
-**With Ninja**, on either platform — only if you have Ninja installed
-(`ninja --version`); otherwise CMake fails with *unable to find a build program
-corresponding to "Ninja"*:
+That produces **`build/pkg_merge`**. Single-config generators default to Release
+on their own, so `-DCMAKE_BUILD_TYPE=Release` is belt and braces.
+
+### Other generators
+
+| Generator | Configure | Executable lands in |
+| --- | --- | --- |
+| Visual Studio (multi-config) | `-G "Visual Studio 17 2022" -A x64` | `build\Release\pkg_merge.exe` |
+| Ninja | `-G Ninja` | `build\pkg_merge.exe` |
+| Makefiles / NMake | *(no `-G`)* | `build\pkg_merge.exe` |
+| Ninja Multi-Config | `-G "Ninja Multi-Config"` | `build\Release\pkg_merge.exe` |
+
+Two rules cover all of them:
+
+- **Multi-config generators ignore `CMAKE_BUILD_TYPE`.** The build type is chosen
+  by `--config Release` at build time, not at configure time.
+- **Single-config generators ignore `--config`.** The build type comes from
+  `-DCMAKE_BUILD_TYPE=Release`, which this project defaults to Release anyway.
+
+NMake runs `nmake` while configuring, so it only works from a Developer Command
+Prompt where the MSVC environment is already on `PATH`.
+
+> **Build Release, not Debug.** A Debug build links against the debug CRT
+> (`MSVCP140D.dll`, `VCRUNTIME140D.dll`, `ucrtbased.dll`) and will only start on a
+> machine that has Visual Studio installed. CMake warns if you configure a
+> non-Release build with a single-config generator.
+
+### Verifying what you built
+
+The repository carries the tools that check a build, and they are the same ones
+CI runs:
 
 ```bat
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build build
+python tools\verify_binary.py build\Release\pkg_merge.exe 3.1.0
 ```
 
-**Windows, NMake** — only from a developer prompt, because this generator runs
-`nmake` while configuring and needs it on `PATH`:
+This asserts the binary has no debug-CRT dependency and carries ASLR, DEP and
+Control Flow Guard. On x64 it also checks high-entropy ASLR, which does not
+exist on 32-bit and is not claimed there.
+
+For the full local gate — builds both architectures, runs every suite — use
+`.\tools\check_all.ps1` on Windows or `bash ./tools/check_all.sh` on Linux. See
+[Testing](#testing).
+
+### If the build breaks
+
+**Delete `build/` and configure again.** CMake caches the generator, the
+compiler and a great deal more, so most confusing failures come from a stale
+cache rather than from the source:
 
 ```bat
-call "%ProgramFiles(x86)%\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
-cmake -S . -B build -G "NMake Makefiles"
-cmake --build build
+Remove-Item -Recurse -Force build
 ```
 
-Single-config generators default to Release automatically; with the Visual Studio
-generator pass `--config Release` explicitly. To retype an existing build folder,
-clear the cached value first: `cmake -U CMAKE_BUILD_TYPE -S . -B build -G Ninja`.
+That is also the fix for the bare `generator: build tool execution failed`
+message with an empty command after it — a half-written cache left behind by a
+failed configure. You cannot switch a `build/` folder to a different generator
+by re-running CMake; delete it and start over.
 
-> **Generator changes need a clean folder.** CMake caches the generator, so if a
-> `build/` directory was created with one generator you cannot switch it by
-> re-running with another — delete the `build/` folder and configure again. This
-> also clears a half-written cache left behind by a failed configure, which is
-> what produces the bare *generator: build tool execution failed* message with an
-> empty command after it.
+### Build options
 
 | CMake option | Default | Meaning |
 | --- | --- | --- |
-| `PKG_MERGE_WERROR` | `OFF` | Treat compiler warnings as errors. |
+| `PKG_MERGE_WERROR` | `OFF` | Treat compiler warnings as errors. CI configures with this on. |
 | `PKG_MERGE_COPYRIGHT` | credits the original authors | Text embedded in the Windows version resource. |
 
 ### Keeping your copy up to date
 
-Pull before you rebuild — you are building from source rather than downloading a
-binary:
+You are building from source rather than downloading a binary, so pull before you
+rebuild:
 
 ```bat
 cd C:\path\to\PkgWithPartsShouldBeMerged
 git pull
+cmake --build build --config Release
 ```
 
-- **Delete `build/` if the build breaks.** `CMakeLists.txt` changes frequently and
-  CMake caches a great deal of configuration: `Remove-Item -Recurse -Force build`
-- **If `git clone` says the destination already exists**, you have a copy — `git pull`.
-- **Check which commit you are on** with `git log --oneline -1`.
-
-`git stash` first if you have local edits and a pull asks you to resolve conflicts.
+- `git stash` first if you have local edits and the pull asks you to resolve
+  conflicts.
+- **`git clone` saying the destination already exists means you already have a
+  copy** — use `git pull`, not `git clone`.
+- `git log --oneline -1` shows which commit you are on.
 
 ---
 
