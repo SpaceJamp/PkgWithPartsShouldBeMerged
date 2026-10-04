@@ -67,19 +67,53 @@ function New-Part([string]$Path, [int]$Bytes, [switch]$Magic) {
 }
 
 function Invoke-Tool([string[]]$ToolArgs) {
-    $output = & $Exe @ToolArgs 2>&1 | Out-String
-    return [pscustomobject]@{ ExitCode = $LASTEXITCODE; Output = $output }
+    # See smoke_test.ps1: a native command writing to stderr yields ErrorRecords,
+    # which $ErrorActionPreference = 'Stop' turns into a terminating error. That
+    # would abort the suite on the first diagnostic instead of asserting on it.
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $output = & $Exe @ToolArgs 2>&1 | Out-String
+        $code = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previous
+    }
+    return [pscustomobject]@{ ExitCode = $code; Output = $output }
 }
 
-# SPEC 18.2 leaves the temporary file's name to the implementer, so this must
-# not filter on a name. Every fixture directory contains only .pkg files, so
-# anything else present is a leftover - a stronger check than matching one
-# hard-coded suffix, and it still catches a partial or temporary file whatever
-# the implementation chose to call it.
-function Assert-NoLeftovers([string]$Dir, [string]$What) {
-    $stray = @(Get-ChildItem -LiteralPath $Dir -Recurse -File -ErrorAction SilentlyContinue |
-        Where-Object { $_.Extension -ne '.pkg' })
-    Assert-True ($stray.Count -eq 0) "$What leaves no file behind other than the .pkg pieces and the merged output"
+# Records the files present in one or more directories so a later check can tell
+# what the tool added. Keyed by absolute path so several directories can be
+# tracked with one snapshot.
+function New-DirSnapshot([string[]]$Dirs) {
+    $map = @{}
+    foreach ($d in $Dirs) {
+        foreach ($f in @(Get-ChildItem -LiteralPath $d -Recurse -File -ErrorAction SilentlyContinue)) {
+            $map[$f.FullName] = $f.Length
+        }
+    }
+    return $map
+}
+
+# SPEC 7.1 and 18.2: a failed, cancelled or interrupted run must not leave a
+# temporary file behind, and the specification deliberately leaves the
+# temporary file's *name* to the implementer. So this compares against what was
+# there before the run instead of matching a name.
+#
+# An earlier version asserted "no file that is not .pkg", which is naming
+# independent but wrong: the hostile-filename fixture deliberately contains
+# '_0.pkg.txt', so that rule reported a fixture file as a leftover. Only a
+# before/after comparison is both.
+#
+# Both the source and the destination are worth watching: SPEC 7.1 puts the
+# temporary file in the destination directory, so a merge refused by a
+# read-only destination would leak there, not in the source.
+function Assert-NoLeftovers([string[]]$Dirs, [string]$What, [hashtable]$Before) {
+    $after = New-DirSnapshot $Dirs
+    $added = @($after.Keys | Where-Object { -not $Before.ContainsKey($_) })
+    # A merged output is expected when the set was valid; anything else is not.
+    $unexpected = @($added | Where-Object { $_ -notmatch '-merged\.pkg$' })
+    Assert-True ($unexpected.Count -eq 0) `
+        "$What leaves nothing behind but its merged output (unexpected: $(if ($unexpected) { ($unexpected | ForEach-Object { Split-Path -Leaf $_ }) -join ', ' } else { 'none' }))"
 }
 
 Write-Host "PkgWithPartsShouldBeMerged robustness test (pass 4)" -ForegroundColor Cyan
@@ -97,6 +131,7 @@ New-Part (Join-Path $odd 'CUSA00001_-1.pkg') 1024
 New-Part (Join-Path $odd '.pkg') 512
 New-Part (Join-Path $odd 'CUSA00002_0.pkg') 4096 -Magic
 New-Part (Join-Path $odd 'CUSA00002_1.pkg') 4096
+$snap = New-DirSnapshot $odd
 $r1 = Invoke-Tool @('-i', $odd, '--overwrite')
 Assert-True ($r1.ExitCode -ne 130) "hostile filenames do not look like a cancellation"
 # SPEC 4: a name that is not a piece file is ignored silently, so this run
@@ -105,18 +140,19 @@ Assert-True ($r1.ExitCode -ne 130) "hostile filenames do not look like a cancell
 Assert-True ($r1.ExitCode -eq 0) "junk filenames are ignored silently and the valid set still merges (exit $($r1.ExitCode))"
 Assert-True (Test-Path (Join-Path $odd 'CUSA00002-merged.pkg')) "the one valid game in the folder still merges"
 Assert-True (-not (Test-Path (Join-Path $odd '_0-merged.pkg'))) "a nameless piece never becomes a merged file"
-Assert-NoLeftovers $odd 'hostile filenames'
+Assert-NoLeftovers $odd 'hostile filenames' $snap
 
 # --- 2. mixed case titles group together ------------------------------------
 Write-Host "`n[2] case insensitive titles"
 $case = Reset-Dir (Join-Path $WorkRoot 'case')
 New-Part (Join-Path $case 'CUSA00003_0.pkg') 8192 -Magic
 New-Part (Join-Path $case 'cusa00003_1.pkg') 8192
+$snap = New-DirSnapshot $case
 $mixed = Invoke-Tool @('-i', $case, '--overwrite', '--verify')
 Assert-True ($mixed.ExitCode -eq 0) "CUSA00003_0 and cusa00003_1 merge as one game (exit $($mixed.ExitCode))"
 Assert-True (Test-Path (Join-Path $case 'CUSA00003-merged.pkg')) "one merged file for the mixed case title"
 Assert-Equal 16384 (Get-Item (Join-Path $case 'CUSA00003-merged.pkg')).Length "mixed case merge has both pieces"
-Assert-NoLeftovers $case 'mixed case titles'
+Assert-NoLeftovers $case 'mixed case titles' $snap
 
 # --- 3. dots and spaces in the title ----------------------------------------
 Write-Host "`n[3] title with dots and spaces"
@@ -135,10 +171,11 @@ Assert-Equal 16384 (Get-Item (Join-Path $dotted 'GAME NAME V1.0-merged.pkg')).Le
 Write-Host "`n[4] 200 pieces in order"
 $many = Reset-Dir (Join-Path $WorkRoot 'many')
 for ($i = 0; $i -lt 200; $i++) { New-Part (Join-Path $many ('CUSA00004_{0}.pkg' -f $i)) 1024 -Magic:($i -eq 0) }
+$snap = New-DirSnapshot $many
 $seq = Invoke-Tool @('-i', $many, '--overwrite', '--verify', '--quiet')
 Assert-Equal 0 $seq.ExitCode "200 pieces merge successfully"
 Assert-Equal 204800 (Get-Item (Join-Path $many 'CUSA00004-merged.pkg')).Length "all 200 pieces landed in order"
-Assert-NoLeftovers $many '200 pieces'
+Assert-NoLeftovers $many '200 pieces' $snap
 
 # --- 5. pieces supplied out of order ----------------------------------------
 Write-Host "`n[5] shuffled piece order on disk"
@@ -158,11 +195,12 @@ New-Part (Join-Path $roIn 'CUSA00006_0.pkg') 4096 -Magic
 New-Part (Join-Path $roIn 'CUSA00006_1.pkg') 4096
 $roOut = Reset-Dir (Join-Path $WorkRoot 'readonly-out')
 & icacls $roOut /deny "$env:USERNAME`:(OI)(CI)(W)" 2>&1 | Out-Null
+$snap = New-DirSnapshot @($roIn, $roOut)
 $ro = Invoke-Tool @('-i', $roIn, '-o', $roOut, '--overwrite')
 & icacls $roOut /remove:d "$env:USERNAME" 2>&1 | Out-Null
 Assert-True ($ro.ExitCode -ne 0) "a read-only output directory fails (exit $($ro.ExitCode))"
 Assert-True ($ro.Output -match 'readonly-out') "the read-only output directory is named"
-Assert-NoLeftovers $roIn 'read-only output directory'
+Assert-NoLeftovers @($roIn, $roOut) 'read-only output directory' $snap
 
 # --- 7. a source file locked by another process -----------------------------
 Write-Host "`n[7] locked source file"
@@ -172,13 +210,14 @@ New-Part (Join-Path $lockIn 'CUSA00007_1.pkg') 65536
 $lockedFile = Join-Path $lockIn 'CUSA00007_1.pkg'
 $handle = [IO.File]::Open($lockedFile, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::None)
 try {
-    $lk = Invoke-Tool @('-i', $lockIn, '--overwrite')
+    $snap = New-DirSnapshot $lockIn
+$lk = Invoke-Tool @('-i', $lockIn, '--overwrite')
 } finally {
     $handle.Dispose()
 }
 Assert-True ($lk.ExitCode -ne 0) "a locked source file fails (exit $($lk.ExitCode))"
 Assert-True ($lk.Output -match 'CUSA00007_1\.pkg') "the locked file is named"
-Assert-NoLeftovers $lockIn 'locked source file'
+Assert-NoLeftovers $lockIn 'locked source file' $snap
 
 # --- 8. very long path -------------------------------------------------------
 Write-Host "`n[8] long path"
@@ -216,13 +255,14 @@ if ($SkipLarge) {
             $stream.SetLength($each)
         } finally { $stream.Dispose() }
     }
-    $bigRun = Invoke-Tool @('-i', $big, '--overwrite', '--verify', '--quiet')
+    $snap = New-DirSnapshot $big
+$bigRun = Invoke-Tool @('-i', $big, '--overwrite', '--verify', '--quiet')
     $merged = Join-Path $big 'CUSA00009-merged.pkg'
     $expected = 2 * $each
     $actual = if (Test-Path $merged) { (Get-Item $merged).Length } else { -1 }
     Assert-Equal 0 $bigRun.ExitCode "a 2.5 GiB merge succeeds (exit $($bigRun.ExitCode))"
     Assert-Equal $expected $actual "the merged file is exactly $expected bytes"
-    Assert-NoLeftovers $big '2.5 GiB merge'
+    Assert-NoLeftovers $big '2.5 GiB merge' $snap
     Remove-Item -LiteralPath $big -Recurse -Force -ErrorAction SilentlyContinue
 }
 

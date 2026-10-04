@@ -77,15 +77,15 @@ if [ -x "$EXE" ]; then
     printf '       (smoke coverage not assessed: the suite failed)\n'
   else
     pass "smoke test"
-    # Coverage must not silently shrink: 54 checks are expected on POSIX.
+    # Coverage must not silently shrink: 60 checks are expected on POSIX.
     reported="$(printf '%s' "$smoke_output" | sed -n 's/.*[^0-9]\([0-9]*\) total.*/\1/p' | tail -1)"
     if [ -z "$reported" ]; then
       reported="$(printf '%s' "$smoke_output" | sed -n 's/.*PASS - \([0-9]*\) checks succeeded.*/\1/p' | tail -1)"
     fi
-    if [ -n "$reported" ] && [ "$reported" -ge 54 ]; then
-      pass "smoke coverage ($reported checks, expected >= 54)"
+    if [ -n "$reported" ] && [ "$reported" -ge 60 ]; then
+      pass "smoke coverage ($reported checks, expected >= 60)"
     else
-      fail "smoke coverage reported '${reported:-none}', expected >= 54"
+      fail "smoke coverage reported '${reported:-none}', expected >= 60"
     fi
   fi
 else

@@ -59,20 +59,25 @@ set(PKG_MERGE_COPYRIGHT "Copyright (c) 2026 SpaceJamp - GPL-3.0-only. Original p
 # all-rights-reserved upstream-derived code; it survives only in the git history
 # and must not be restored or copied from. Do not name this variable after it.
 set(PKG_MERGE_SOURCES
-    #
+    src/main.cpp
+    src/pkgmerge/app.cpp
+    src/pkgmerge/cli.cpp
+    src/pkgmerge/fileio.cpp
+    src/pkgmerge/merge.cpp
+    src/pkgmerge/platform.cpp
+    src/pkgmerge/scan.cpp
+    src/pkgmerge/term.cpp
+    src/pkgmerge/text.cpp
     )
 add_executable(pkg_merge ${PKG_MERGE_SOURCES})
 
-if(NOT PKG_MERGE_SOURCES)
-  message(WARNING
-    "No sources listed in PKG_MERGE_SOURCES - the implementation is being "
-    "rebuilt from docs/SPEC.md. The repository will not configure until the "
-    "new sources are added here.")
-endif()
-
 target_compile_features(pkg_merge PRIVATE cxx_std_20)
 target_compile_definitions(pkg_merge PRIVATE PKG_MERGE_VERSION="${PROJECT_VERSION}")
-target_include_directories(pkg_merge PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+# The repository root keeps "docs/SPEC.md"-style paths addressable; src is what
+# makes #include "pkgmerge/..." resolve from inside the tree.
+target_include_directories(pkg_merge PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 if(WIN32)
   target_compile_definitions(pkg_merge PRIVATE UNICODE _UNICODE)
@@ -95,7 +100,11 @@ if(MSVC)
     /DYNAMICBASE
     /NXCOMPAT
     /guard:cf
-    /CETCOMPAT)      # ignored below for x86, where shadow stacks do not exist
+    /CETCOMPAT      # ignored below for x86, where shadow stacks do not exist
+    # Without this the manifest that reaches the executable is the CRT's own, and
+    # longPathAware is lost with it: every path over 260 characters then fails
+    # (spec sections 15 and 17.8).
+    "/MANIFESTINPUT:${CMAKE_CURRENT_BINARY_DIR}/app.manifest")
   if(CMAKE_SIZEOF_VOID_P EQUAL 4)
     # CET shadow stack is x64 only; HIGHENTROPYVA needs a >4 GiB address space.
     get_target_property(_opts pkg_merge LINK_OPTIONS)

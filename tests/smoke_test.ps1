@@ -61,8 +61,20 @@ function New-Game([string]$Dir, [string]$TitleId, [int]$Parts, [int]$PartSize = 
 }
 
 function Invoke-Tool([string[]]$ToolArgs) {
-    $output = & $Exe @ToolArgs 2>&1 | Out-String
-    return [pscustomobject]@{ ExitCode = $LASTEXITCODE; Output = $output }
+    # A native command writing to stderr produces ErrorRecords, and under
+    # $ErrorActionPreference = 'Stop' the first one terminates the script. The
+    # suite sets 'Stop' so that a broken fixture fails loudly, but it must still
+    # be able to capture a diagnostic from the tool - which is the whole point of
+    # 2>&1 below. Relax the preference for the duration of the call only.
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $output = & $Exe @ToolArgs 2>&1 | Out-String
+        $code = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previous
+    }
+    return [pscustomobject]@{ ExitCode = $code; Output = $output }
 }
 
 function Assert-MergedContent([string]$OutDir, [string]$TitleId, [string[]]$Sources) {
@@ -265,14 +277,20 @@ Assert-True ($uni.Output -notmatch '\?\?') "no mangled characters in the output"
 Write-Host "`n[15] re-running is idempotent"
 $idemIn = Join-Path $root "idem-in"; Reset-Dir $idemIn | Out-Null
 $idemGame = New-Game -Dir $idemIn -TitleId 'CUSA16161' -Parts 2
+# Snapshot after the fixture exists, before the tool ever runs.
+# SPEC 7.1 and 18.2: no temporary file may be left behind, and the temporary
+# file's name is the implementer's choice. A before/after comparison is naming
+# independent; filtering on "is not a .pkg" would be wrong, because a fixture may
+# legitimately contain files with other extensions.
+$idemBefore = @(Get-ChildItem -LiteralPath $idemIn -Recurse -File | ForEach-Object { $_.FullName })
 Invoke-Tool @('-i', $idemIn, '--overwrite') | Out-Null
 $again = Invoke-Tool @('-i', $idemIn, '--overwrite', '--verify')
 Assert-Equal 0 $again.ExitCode "a second run succeeds"
 Assert-MergedContent -OutDir $idemIn -TitleId 'CUSA16161' -Sources $idemGame
 Assert-Equal 1 (@(Get-ChildItem -LiteralPath $idemIn -Filter '*-merged.pkg')).Count "only one merged file exists"
-# SPEC 18.2 leaves the temporary file's name to the implementer, so this must
-# not filter on one: the directory should hold nothing but .pkg files.
-Assert-Equal 0 (@(Get-ChildItem -LiteralPath $idemIn -Recurse -File | Where-Object { $_.Extension -ne '.pkg' })).Count "no temporary files are left behind"
+$idemStray = @(Get-ChildItem -LiteralPath $idemIn -Recurse -File |
+    Where-Object { $idemBefore -notcontains $_.FullName -and $_.Name -notmatch '-merged\.pkg$' })
+Assert-Equal 0 $idemStray.Count "no temporary files are left behind (unexpected: $(if ($idemStray) { ($idemStray | ForEach-Object { Split-Path -Leaf $_.FullName }) -join ', ' } else { 'none' }))"
 
 # --- 16. numeric piece ordering (SPEC 5) --------------------------------------
 # SPEC 5 and 18.3 both single this out: ordering must be by piece number, not by

@@ -139,7 +139,7 @@ foreach ($a in $Arch) {
     # count that says nothing about coverage.
     if ($smokeCode -eq 0) {
         $reported = Get-ReportedChecks $script:LastOutput
-        Add-Pass "pass 4 smoke coverage ($a)" ($reported -ge 65) "reported $reported, expected >= 65"
+        Add-Pass "pass 4 smoke coverage ($a)" ($reported -ge 73) "reported $reported, expected >= 73"
     } else {
         Write-Host "[skip] pass 4 smoke coverage ($a): suite failed, count not comparable" -ForegroundColor Yellow
     }

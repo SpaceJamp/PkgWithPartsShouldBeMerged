@@ -232,16 +232,23 @@ assert_merged_content "$uni_out" CUSA15151 "$uni_in"/CUSA15151_*.pkg
 section "[15] re-running is idempotent"
 idem_in="$WORK_ROOT/idem-in"; reset_dir "$idem_in"
 make_game "$idem_in" CUSA16161 2
+# Snapshot after the fixture exists, before the tool ever runs.
+# SPEC 7.1 and 18.2: no temporary file may be left behind, and the temporary
+# file's name is the implementer's choice. A before/after comparison is naming
+# independent; filtering on "is not a .pkg" would be wrong, because a fixture may
+# legitimately contain files with other extensions.
+idem_list="$(mktemp)"
+find "$idem_in" -type f | sort > "$idem_list"
 run_tool -i "$idem_in" --overwrite
 run_tool -i "$idem_in" --overwrite --verify
 assert_eq 0 "$EXIT_CODE" "a second run succeeds"
 assert_merged_content "$idem_in" CUSA16161 "$idem_in"/CUSA16161_[0-9].pkg
 count="$(find "$idem_in" -name '*-merged.pkg' | wc -l | tr -d ' ')"
 assert_eq 1 "$count" "only one merged file exists"
-# SPEC 18.2 leaves the temporary file's name to the implementer, so this must
-# not filter on one: the directory should hold nothing but .pkg files.
-count="$(find "$idem_in" -type f ! -name '*.pkg' | wc -l | tr -d ' ')"
-assert_eq 0 "$count" "no temporary files are left behind"
+stray="$(comm -13 "$idem_list" <(find "$idem_in" -type f | sort) |
+  grep -v -- '-merged\.pkg$' | wc -l | tr -d ' ')"
+rm -f "$idem_list"
+assert_eq 0 "$stray" "no temporary files are left behind"
 
 # --- 16. numeric ordering past piece 9 ----------------------------------------
 # SPEC 5 and 18.3: ordering is by piece number, not by file name. Past piece 9 a
