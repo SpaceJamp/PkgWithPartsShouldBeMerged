@@ -204,9 +204,6 @@ all before reporting. When a fix lands, say explicitly which passes were re-run.
 - **GPL-3.0 section 4 matters here.** You may only apply the GPL to code you hold
   rights in. No earlier implementation of this tool is in this repository or its
   history, and none may be copied in or relicensed under the GPL.
-  `LICENSE.md` records this, and the credits are load-bearing, not decoration:
-  they are what makes this provenance honest, and they stay even though the
-  upstream repositories are the only place that code now exists.
 - Never ship a `Debug` build or an exe with debug-CRT dependencies.
 - Prefer `std::error_code` overloads of `<filesystem>` over throwing calls;
   report errors, never `std::terminate`.
