@@ -46,9 +46,6 @@ Rules while the implementation is outstanding:
   side effects on disk, and — for the validation rules in spec section 6 — that
   the output *names the offending file or number*. Wording is deliberately
   unspecified; copying it to satisfy a test is the failure mode to avoid.
-- Keep the credits for Tustin & 0x199 and aldo-o. The upstream repositories are
-  the only place that earlier code exists now, which makes the attribution more
-  load-bearing than ever, not less.
 
 ## 1. Pass matrix
 
