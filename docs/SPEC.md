@@ -1,17 +1,6 @@
 <!-- SPDX-License-Identifier: GPL-3.0-only -->
 # PkgWithPartsShouldBeMerged — behavioural specification
 
-**This document is the complete input to a clean-room reimplementation.** It
-describes *what* the program must do and *how it must behave*, and contains no
-code, no algorithms, no data structures and no implementation detail. An
-implementer working only from this document, who has never seen the previous
-implementation, produces independent work.
-
-Do not read the previous implementation while working from this document —
-see [Clean-room protocol](#clean-room-protocol).
-
----
-
 ## 1. Purpose
 
 Reassemble a large PS4 `.pkg` file that was distributed as numbered byte-range
@@ -340,30 +329,3 @@ definition of done. In particular:
   prebuilt executables — users build their own.
 - CI is the only authority on whether the other targets build. Local x64 Windows
   results say nothing about Linux or x86.
-
----
-
-## Clean-room protocol
-
-For the rewrite to carry any weight as independent work:
-
-1. Write this specification from the requirements and the PS4 PKG container
-   format. It must not be derived by reading the previous implementation, and it
-   contains no code.
-2. Implement from this document **only**, in a context that has never contained
-   the previous implementation. The author of the specification and the author of
-   the implementation must not be the same context.
-3. Record in the repository: this document, the commit that introduces the
-   implementation, and a statement of who wrote what.
-4. Keep the credits for Tustin & 0x199 and aldo-o in place. Writing this code does
-   not erase the lineage — it produces work that is separately attributable, which
-   is only possible because the lineage was recorded honestly.
-
-The specification deliberately describes *behaviour*, not *mechanism*. Where this
-document says "streamed in fixed-size blocks" it is stating a requirement that can
-be verified, not an instruction to use a particular buffering strategy.
-
-**Scope note.** No earlier implementation of this tool exists in this repository
-or its history. Nothing here is derived from one, and retrieving one would break
-the clean room this document depends on. The credits in the README record where
-the tool came from; they are not an invitation to go and read that code.
