@@ -201,20 +201,12 @@ all before reporting. When a fix lands, say explicitly which passes were re-run.
 
 ## 4. House rules
 
-- **The project is GPL-3.0-only.** Every source file carries
-  `SPDX-License-Identifier: GPL-3.0-only` and `LICENSE` holds the canonical text.
-  Keep them in agreement: a mismatched identifier is worse than either alone,
-  because tooling trusts the header. Adding a licence *claim* different from
-  GPL-3.0-only still needs the user to say so in the session.
 - **GPL-3.0 section 4 matters here.** You may only apply the GPL to code you hold
   rights in. No earlier implementation of this tool is in this repository or its
   history, and none may be copied in or relicensed under the GPL.
   `LICENSE.md` records this, and the credits are load-bearing, not decoration:
   they are what makes this provenance honest, and they stay even though the
   upstream repositories are the only place that code now exists.
-- **Always credit upstream work** in README and file headers: Tustin & 0x199
-  (original), aldo-o (fork lineage), btzy (folder dialog). Do not present
-  inherited code as new.
 - Never ship a `Debug` build or an exe with debug-CRT dependencies.
 - Prefer `std::error_code` overloads of `<filesystem>` over throwing calls;
   report errors, never `std::terminate`.
