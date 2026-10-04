@@ -23,7 +23,10 @@ import time
 import urllib.request
 
 OWNER = "SpaceJamp"
-REPO = "pkg-merge"
+# Must match the repository name exactly; the API 404s on a wrong or
+# case-mismatched name, which surfaces as "no workflow run found" rather than
+# as an obvious error.
+REPO = "PkgWithPartsShouldBeMerged"
 
 
 def token() -> str:
