@@ -3,7 +3,7 @@
 
 These rules apply to **every** change in this repo, in every session.
 
-The Agent can change any of this when the user asks it to
+The Agent can change any of this when the user asks it to or gives it permission.
 
 ---
 
