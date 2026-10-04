@@ -232,46 +232,6 @@ docs/SPEC.md             the behavioural specification the implementation is wri
 resources/               Windows version resource + application manifest
 tests/                   smoke and robustness suites
 tools/                   local bug-check gate, binary verifier
-```
-
----
-
-## Why a rewrite
-
-An earlier implementation of this tool, descended from a fork of
-[aldo-o/pkg-merge][aldo], derived from two upstream projects that never declared
-a license:
-
-- **[Tustin & 0x199](https://github.com/Tustin/pkg-merge)**[tustin] — the original
-  `pkg-merge`. The core idea, the `<TITLE_ID>_<N>.pkg` layout and the shape of the
-  merging code are theirs.
-- **[aldo-o](https://github.com/aldo-o/pkg-merge)**[aldo] — the fork that added macOS
-  support and the native folder picker (`v3.0b`), and later the `-i` / `-o`
-  arguments and an optional output directory.
-- **[btzy](https://github.com/btzy/nativefiledialog-extended)** — author of the
-  folder dialog those versions used, now neither used nor needed.
-
-Because neither upstream ever granted a license, that code was all rights
-reserved and **could not be relicensed** - which made extending it awkward and
-publishing it impossible to do cleanly. Re-implementing it from a specification,
-rather than asking permission for code that has sat untouched since 2018 and 2025,
-produces something that can be licensed and maintained on its own terms.
-
-`docs/SPEC.md` states *what* the program must do and *how it must behave*. It
-contains no code, no algorithms and no data structures, and it was written from
-the PKG container format and the required behaviour rather than from the previous
-implementation. The code is then written from that specification, which is what
-makes this repository's GPL-3.0 licence a clean claim rather than a borrowed one.
-
-The upstream repositories are untouched and remain public: [Tustin/pkg-merge][tustin]
-(last commit 2018) and [aldo-o/pkg-merge][aldo] (last commit 2025). They are where
-this tool's history lives, and where any question about the original code should
-be directed.
-
-[tustin]: https://github.com/Tustin/pkg-merge
-[aldo]: https://github.com/aldo-o/pkg-merge
-
----
 
 ## License
 
