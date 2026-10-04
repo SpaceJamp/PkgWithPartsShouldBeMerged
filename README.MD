@@ -49,7 +49,7 @@ CUSA12345_0.pkg   CUSA12345_1.pkg   CUSA12345_2.pkg   ->   CUSA12345-merged.pkg
 2. Do any of these:
    - **double-click** the executable and pick the folder in the dialog;
    - **drag** the folder onto the executable (Windows);
-   - run it from a terminal: `PkgWithPartsShouldBeMerged.exe "D:\PS4 pieces"`.
+   - run it from a terminal: `pkg_merge.exe "D:\PS4 pieces"`.
 3. Wait for `[success] completed`.
 
 On Linux with neither `zenity` nor `kdialog` installed, pass `--input` — the
@@ -80,9 +80,9 @@ Both the flags and plain positional arguments work, so drag & drop keeps
 working:
 
 ```bat
-PkgWithPartsShouldBeMerged.exe "D:\PS4 pieces" "D:\merged"
-PkgWithPartsShouldBeMerged.exe -i "D:\PS4 pieces" -o "D:\merged"
-PkgWithPartsShouldBeMerged.exe -i "D:\PS4 pieces" --dry-run --recursive --verify
+pkg_merge.exe "D:\PS4 pieces" "D:\merged"
+pkg_merge.exe -i "D:\PS4 pieces" -o "D:\merged"
+pkg_merge.exe -i "D:\PS4 pieces" --dry-run --recursive --verify
 ```
 
 Press `ESC` or `Ctrl+C` to cancel a merge in progress.
@@ -183,8 +183,8 @@ clear the cached value first: `cmake -U CMAKE_BUILD_TYPE -S . -B build -G Ninja`
 
 | CMake option | Default | Meaning |
 | --- | --- | --- |
-| `PkgWithPartsShouldBeMerged_WERROR` | `OFF` | Treat compiler warnings as errors. |
-| `PkgWithPartsShouldBeMerged_COPYRIGHT` | credits the original authors | Text embedded in the Windows version resource. |
+| `PKG_MERGE_WERROR` | `OFF` | Treat compiler warnings as errors. |
+| `PKG_MERGE_COPYRIGHT` | credits the original authors | Text embedded in the Windows version resource. |
 
 ### Keeping your copy up to date
 
@@ -291,7 +291,7 @@ If you use this, please pass the credit on.
 
 ## License
 
-[GPL-3.0-only](LICENSE) — see [`LICENSE.md`](./LICENSE.md) for provenance and scope.
+[GPL-3.0-only](LICENSE) — see [Why a rewrite](#why-a-rewrite) above for provenance and scope.
 
 Copyright (c) 2026 SpaceJamp.
 

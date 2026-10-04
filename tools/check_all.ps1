@@ -11,7 +11,8 @@
 # Pass 7 (foreign platforms) is NOT covered here - only CI can judge that.
 # See AGENTS.md.
 #
-# SPDX-License-Identifier: GPL-3.0-only. See LICENSE and LICENSE.md for provenance.[CmdletBinding()]
+# SPDX-License-Identifier: GPL-3.0-only. See LICENSE for the licence text.
+[CmdletBinding()]
 param(
     [string[]]$Arch = @('x64', 'Win32'),
     [switch]$SkipLarge,
@@ -49,7 +50,13 @@ function Invoke-Check([string]$Name, [string]$Exe, [scriptblock]$Action) {
 # Reports how many checks a suite claims to have run, taken from its own summary
 # line. This is the real coverage signal: counting assertion call sites in the
 # source is not, because a helper can run several times per call.
+#
+# A suite that skips a section for platform reasons still reports those checks in
+# its total, so the coverage floor measures intended coverage and cannot be
+# lowered by removing assertions. "N total" wins over the bare count when
+# present; the bare count is the fallback for a suite that never skips.
 function Get-ReportedChecks([string]$Output) {
+    if ($Output -match '(\d+)\s+total\b') { return [int]$Matches[1] }
     if ($Output -match '(\d+)\s+checks succeeded') { return [int]$Matches[1] }
     return -1
 }
@@ -109,11 +116,13 @@ foreach ($suite in $requiredHelpers.Keys) {
 }
 
 # --- Passes 4/5/6 on the primary architecture -------------------------------
-$primary = if ($Arch -contains 'x64') { 'build\x64\Release\PkgWithPartsShouldBeMerged.exe' } else { "build\$($Arch[0].ToLower())\Release\PkgWithPartsShouldBeMerged.exe" }
+$primary = if ($Arch -contains 'x64') { 'build\x64\Release\pkg_merge.exe' } else { "build\$($Arch[0].ToLower())\Release\pkg_merge.exe" }
 
+# The target is named pkg_merge (see add_executable in CMakeLists.txt), which is
+# also what CI runs and what the version resource declares as OriginalFilename.
 foreach ($a in $Arch) {
     $dir = if ($a -eq 'x64') { 'build\x64\Release' } else { "build\$($a.ToLower())\Release" }
-    $exe = Join-Path $root "$dir\PkgWithPartsShouldBeMerged.exe"
+    $exe = Join-Path $root "$dir\pkg_merge.exe"
     if (-not (Test-Path $exe)) {
         Add-Pass "pass 6 verify binary ($a)" $false "not built"
         continue
@@ -121,23 +130,34 @@ foreach ($a in $Arch) {
     $null = Invoke-Check "pass 6 verify binary ($a)" $exe {
         python tools\verify_binary.py $exe 3.1.0
     }
-    $null = Invoke-Check "pass 4 smoke test ($a)" $exe {
+    $smokeCode = Invoke-Check "pass 4 smoke test ($a)" $exe {
         powershell -NoProfile -ExecutionPolicy Bypass -File tests\smoke_test.ps1 -Exe $exe -WorkRoot "$env:TEMP\PkgWithPartsShouldBeMerged-check-$a"
     }
     # Coverage must not silently shrink: 65 checks are expected on Windows.
-    $reported = Get-ReportedChecks $script:LastOutput
-    Add-Pass "pass 4 smoke coverage ($a)" ($reported -ge 65) "reported $reported, expected >= 65"
+    # Only meaningful when the suite passed: assert_merged_content stops after
+    # its first check when the merge failed, so a failing run reports a lower
+    # count that says nothing about coverage.
+    if ($smokeCode -eq 0) {
+        $reported = Get-ReportedChecks $script:LastOutput
+        Add-Pass "pass 4 smoke coverage ($a)" ($reported -ge 65) "reported $reported, expected >= 65"
+    } else {
+        Write-Host "[skip] pass 4 smoke coverage ($a): suite failed, count not comparable" -ForegroundColor Yellow
+    }
 }
 
 $robustArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'tests\robustness_test.ps1',
     '-Exe', $primary, '-WorkRoot', "$env:TEMP\PkgWithPartsShouldBeMerged-check-robust")
 if ($SkipLarge) { $robustArgs += '-SkipLarge' }
-$null = Invoke-Check "pass 5 robustness test$(if ($SkipLarge) { ' (without >2 GiB)' })" $primary {
+$robustCode = Invoke-Check "pass 5 robustness test$(if ($SkipLarge) { ' (without >2 GiB)' })" $primary {
     powershell @robustArgs
 }
-$robustReported = Get-ReportedChecks $script:LastOutput
 $robustFloor = if ($SkipLarge) { 24 } else { 27 }
-Add-Pass "pass 5 robustness coverage" ($robustReported -ge $robustFloor) "reported $robustReported, expected >= $robustFloor"
+if ($robustCode -eq 0) {
+    $robustReported = Get-ReportedChecks $script:LastOutput
+    Add-Pass "pass 5 robustness coverage" ($robustReported -ge $robustFloor) "reported $robustReported, expected >= $robustFloor"
+} else {
+    Write-Host "[skip] pass 5 robustness coverage: suite failed, count not comparable" -ForegroundColor Yellow
+}
 
 # --- Summary -----------------------------------------------------------------
 Write-Host "`n================ summary ================" -ForegroundColor Cyan

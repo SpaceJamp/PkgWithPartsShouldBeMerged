@@ -2,7 +2,7 @@
 # pkg-merge - build definition
 #
 # SPDX-License-Identifier: GPL-3.0-only
-# See LICENSE for the licence and LICENSE.md for provenance.
+# See LICENSE for the licence text.
 cmake_minimum_required(VERSION 3.24)
 
 # ---------------------------------------------------------------------------

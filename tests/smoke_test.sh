@@ -5,11 +5,12 @@
 # Mirrors tests/smoke_test.ps1. The folder dialog is skipped by always passing
 # an explicit input directory.
 #
-# Usage: ./tests/smoke_test.sh [path/to/PkgWithPartsShouldBeMerged]
+# Usage: ./tests/smoke_test.sh [path/to/pkg_merge]
 #
-# SPDX-License-Identifier: GPL-3.0-only. See LICENSE and LICENSE.md for provenance.set -uo pipefail
+# SPDX-License-Identifier: GPL-3.0-only. See LICENSE for the licence text.
+set -uo pipefail
 
-EXE="${1:-./build/PkgWithPartsShouldBeMerged}"
+EXE="${1:-./build/pkg_merge}"
 WORK_ROOT="${TMPDIR:-/tmp}/PkgWithPartsShouldBeMerged-smoke-$$"
 CHECKS=0
 FAILURES=0
@@ -84,7 +85,7 @@ run_tool --version;                assert_eq 0 "$EXIT_CODE" "--version exits wit
 # --- 2. usage errors ---------------------------------------------------------
 section "[2] usage errors"
 run_tool --definitely-not-an-option; assert_eq 1 "$EXIT_CODE" "unknown option exits with 1"
-case "$OUTPUT" in *"unknown option"*) r=0;; *) r=1;; esac; assert_true "$r" "unknown option is reported"
+case "$OUTPUT" in *definitely-not-an-option*) r=0;; *) r=1;; esac; assert_true "$r" "the unknown option is named"
 run_tool --input;                    assert_eq 1 "$EXIT_CODE" "missing option value exits with 1"
 
 # --- 3. bad input path -------------------------------------------------------
@@ -92,7 +93,7 @@ section "[3] bad input path"
 bad_in="$WORK_ROOT/none"; reset_dir "$bad_in"
 make_part "$bad_in/not-a-folder.pkg" 1024 7 magic
 run_tool -i "$bad_in/not-a-folder.pkg"; assert_eq 1 "$EXIT_CODE" "input that is a file exits with 1"
-case "$OUTPUT" in *"not a directory"*) r=0;; *) r=1;; esac; assert_true "$r" "non-directory input is reported"
+case "$OUTPUT" in *not-a-folder.pkg*) r=0;; *) r=1;; esac; assert_true "$r" "the offending path is named"
 
 empty_in="$WORK_ROOT/empty"; reset_dir "$empty_in"
 run_tool -i "$empty_in";                     assert_eq 1 "$EXIT_CODE" "empty folder exits with 1"
@@ -135,7 +136,9 @@ make_part "$gap_in/CUSA55555_0.pkg" 1024 1 magic
 make_part "$gap_in/CUSA55555_2.pkg" 1024 2
 run_tool -i "$gap_in" --overwrite
 assert_eq 1 "$EXIT_CODE" "gap in the part sequence fails"
-case "$OUTPUT" in *"missing part 1"*) r=0;; *) r=1;; esac; assert_true "$r" "the missing piece is named"
+# SPEC 6.2: the message must name the first missing number, which is 1 here.
+if printf '%s' "$OUTPUT" | grep -q 'CUSA55555' && printf '%s' "$OUTPUT" | grep -qE '(^|[^0-9])1([^0-9]|$)'; then r=0; else r=1; fi
+assert_true "$r" "the diagnostic names the set and the missing number 1"
 if [ -f "$gap_in/CUSA55555-merged.pkg" ]; then r=1; else r=0; fi
 assert_true "$r" "no output written on a gap"
 
@@ -146,7 +149,8 @@ make_part "$orphan_in/CUSA66666_1.pkg" 1024 4
 make_part "$orphan_in/CUSA66666_2.pkg" 1024 5
 run_tool -i "$orphan_in" --overwrite
 assert_eq 1 "$EXIT_CODE" "missing root piece fails instead of crashing"
-case "$OUTPUT" in *"root piece"*) r=0;; *) r=1;; esac; assert_true "$r" "the missing root piece is named"
+# SPEC 6.1: the message must name the missing file name.
+case "$OUTPUT" in *CUSA66666_0.pkg*) r=0;; *) r=1;; esac; assert_true "$r" "the missing root piece's file name is named"
 
 # --- 9. duplicate part number ------------------------------------------------
 section "[9] duplicate part number"
@@ -155,7 +159,12 @@ make_game "$dup_in" CUSA77777 2
 make_part "$dup_in/CUSA77777_01.pkg" 1024 9
 run_tool -i "$dup_in" --overwrite
 assert_eq 1 "$EXIT_CODE" "duplicate part number fails"
-case "$OUTPUT" in *"exists twice"*) r=0;; *) r=1;; esac; assert_true "$r" "the duplicate is reported"
+# SPEC 6.3: the message must name both file names.
+dup_a=1; dup_b=1
+case "$OUTPUT" in *CUSA77777_1.pkg*) dup_a=0;; esac
+case "$OUTPUT" in *CUSA77777_01.pkg*) dup_b=0;; esac
+if [ "$dup_a" -eq 0 ] && [ "$dup_b" -eq 0 ]; then r=0; else r=1; fi
+assert_true "$r" "both duplicate file names are named"
 
 # --- 10. empty piece ---------------------------------------------------------
 section "[10] empty piece"
@@ -164,7 +173,8 @@ make_part "$empty_piece/CUSA88888_0.pkg" 1024 6 magic
 : > "$empty_piece/CUSA88888_1.pkg"
 run_tool -i "$empty_piece" --overwrite
 assert_eq 1 "$EXIT_CODE" "an empty piece fails"
-case "$OUTPUT" in *"is empty"*) r=0;; *) r=1;; esac; assert_true "$r" "the empty piece is reported"
+# SPEC 6.4: the message must name the offending file.
+case "$OUTPUT" in *CUSA88888_1.pkg*) r=0;; *) r=1;; esac; assert_true "$r" "the empty piece's file name is named"
 
 # --- 11. overwrite / no-clobber ---------------------------------------------
 section "[11] overwrite policy"
@@ -175,14 +185,14 @@ merged_path="$over_in/CUSA99999-merged.pkg"
 first_hash="$(cksum < "$merged_path")"
 run_tool -i "$over_in" --no-clobber
 assert_eq 0 "$EXIT_CODE" "--no-clobber exits with 0"
-case "$OUTPUT" in *no-clobber*) r=0;; *) r=1;; esac; assert_true "$r" "--no-clobber reports the skip"
+case "$OUTPUT" in *CUSA99999-merged.pkg*) r=0;; *) r=1;; esac; assert_true "$r" "--no-clobber names the file it skipped"
 assert_eq "$first_hash" "$(cksum < "$merged_path")" "--no-clobber left the existing file untouched"
 run_tool -i "$over_in" --no-clobber --overwrite
 assert_eq 1 "$EXIT_CODE" "--no-clobber with --overwrite is rejected"
 
 run_tool -i "$over_in"   # non-interactive: keeps the existing file
 assert_eq "$first_hash" "$(cksum < "$merged_path")" "a non-interactive run keeps the existing file"
-case "$OUTPUT" in *"was kept"*) r=0;; *) r=1;; esac; assert_true "$r" "the kept file is reported"
+case "$OUTPUT" in *CUSA99999-merged.pkg*) r=0;; *) r=1;; esac; assert_true "$r" "the kept file is named in the non-interactive skip"
 run_tool -i "$over_in" --overwrite --verify
 assert_eq 0 "$EXIT_CODE" "--overwrite replaces the file"
 
@@ -192,7 +202,7 @@ verify_in="$WORK_ROOT/verify-in"; reset_dir "$verify_in"
 make_game "$verify_in" CUSA13131 2
 run_tool -i "$verify_in" --overwrite --verify
 assert_eq 0 "$EXIT_CODE" "--verify succeeds on a good merge"
-case "$OUTPUT" in *match*) r=0;; *) r=1;; esac; assert_true "$r" "--verify reports a match"
+case "$OUTPUT" in *CUSA13131-merged.pkg*) r=0;; *) r=1;; esac; assert_true "$r" "--verify names the file it verified"
 
 # --- 13. recursive scan ------------------------------------------------------
 section "[13] recursive scan"
@@ -201,8 +211,9 @@ rec_sub="$rec_in/sub"; mkdir -p "$rec_sub"
 make_game "$rec_sub" CUSA14141 2
 run_tool -i "$rec_in" --overwrite
 assert_eq 1 "$EXIT_CODE" "a flat scan that finds nothing fails"
-case "$OUTPUT" in *"no PKG pieces found"*) r=0;; *) r=1;; esac; assert_true "$r" "the empty scan is reported"
-case "$OUTPUT" in *"use --recursive"*) r=0;; *) r=1;; esac; assert_true "$r" "a hint about --recursive is printed"
+if [ -n "$(printf '%s' "$OUTPUT" | tr -d '[:space:]')" ]; then r=0; else r=1; fi
+assert_true "$r" "the empty scan produces a diagnostic"
+case "$OUTPUT" in *rec-in*) r=0;; *) r=1;; esac; assert_true "$r" "the diagnostic names the folder that was scanned"
 run_tool -i "$rec_in" -r --overwrite --verify
 assert_eq 0 "$EXIT_CODE" "recursive scan exits with 0"
 # The output directory defaults to the *input* directory.

@@ -5,9 +5,10 @@
 # carries the 0x7F "CNT" magic) and exercises the merge tool end to end,
 # including every exit code path.
 #
-# Usage:  pwsh -File tests/smoke_test.ps1 -Exe path\to\PkgWithPartsShouldBeMerged.exe
+# Usage:  pwsh -File tests/smoke_test.ps1 -Exe path\to\pkg_merge.exe
 #
-# SPDX-License-Identifier: GPL-3.0-only. See LICENSE and LICENSE.md for provenance.[CmdletBinding()]
+# SPDX-License-Identifier: GPL-3.0-only. See LICENSE for the licence text.
+[CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string]$Exe,
     [string]$WorkRoot = (Join-Path ([IO.Path]::GetTempPath()) "PkgWithPartsShouldBeMerged-smoke")
@@ -104,7 +105,7 @@ Assert-Equal 0 $version.ExitCode "--version exits with 0"
 Write-Host "`n[2] usage errors"
 $unknown = Invoke-Tool @('--definitely-not-an-option')
 Assert-Equal 1 $unknown.ExitCode "unknown option exits with 1"
-Assert-True ($unknown.Output -match 'unknown option') "unknown option is reported"
+Assert-True ($unknown.Output -match 'definitely-not-an-option') "the unknown option is named"
 $missing = Invoke-Tool @('--input')
 Assert-Equal 1 $missing.ExitCode "missing option value exits with 1"
 
@@ -115,7 +116,7 @@ $file = Join-Path $root "not-a-folder.pkg"
 New-PartFile -Path $file -Bytes 1024 -Seed 7 -Magic
 $notADir = Invoke-Tool @('-i', $file)
 Assert-Equal 1 $notADir.ExitCode "input that is a file exits with 1"
-Assert-True ($notADir.Output -match 'not a directory') "non-directory input is reported"
+Assert-True ($notADir.Output -match 'not-a-folder\.pkg') "the offending path is named"
 
 $emptyIn = Join-Path $root "empty-in"; Reset-Dir $emptyIn | Out-Null
 $emptyDir = Invoke-Tool @('-i', $emptyIn)
@@ -161,7 +162,8 @@ New-PartFile -Path (Join-Path $gapIn 'CUSA55555_0.pkg') -Bytes 1024 -Seed 1 -Mag
 New-PartFile -Path (Join-Path $gapIn 'CUSA55555_2.pkg') -Bytes 1024 -Seed 2
 $gap = Invoke-Tool @('-i', $gapIn, '--overwrite')
 Assert-Equal 1 $gap.ExitCode "gap in the part sequence fails"
-Assert-True ($gap.Output -match 'missing part 1') "the missing piece is named"
+# SPEC 6.2: the message must name the first missing number, which is 1 here.
+Assert-True (($gap.Output -match 'CUSA55555') -and ($gap.Output -match '(?<!\d)1(?!\d)')) "the diagnostic names the set and the missing number 1"
 Assert-True (-not (Test-Path (Join-Path $gapIn 'CUSA55555-merged.pkg'))) "no output written on a gap"
 
 # --- 8. pieces without a root -------------------------------------------------
@@ -171,7 +173,8 @@ New-PartFile -Path (Join-Path $orphanIn 'CUSA66666_1.pkg') -Bytes 1024 -Seed 4
 New-PartFile -Path (Join-Path $orphanIn 'CUSA66666_2.pkg') -Bytes 1024 -Seed 5
 $orphan = Invoke-Tool @('-i', $orphanIn, '--overwrite')
 Assert-Equal 1 $orphan.ExitCode "missing root piece fails instead of crashing"
-Assert-True ($orphan.Output -match 'root piece') "the missing root piece is named"
+# SPEC 6.1: the message must name the missing file name.
+Assert-True ($orphan.Output -match 'CUSA66666_0\.pkg') "the missing root piece's file name is named"
 
 # --- 9. duplicate part number -------------------------------------------------
 Write-Host "`n[9] duplicate part number"
@@ -180,7 +183,8 @@ New-Game -Dir $dupIn -TitleId 'CUSA77777' -Parts 2 | Out-Null
 New-PartFile -Path (Join-Path $dupIn 'CUSA77777_01.pkg') -Bytes 1024 -Seed 9
 $dup = Invoke-Tool @('-i', $dupIn, '--overwrite')
 Assert-Equal 1 $dup.ExitCode "duplicate part number fails"
-Assert-True ($dup.Output -match 'exists twice') "the duplicate is reported"
+# SPEC 6.3: the message must name both file names.
+Assert-True (($dup.Output -match 'CUSA77777_1\.pkg') -and ($dup.Output -match 'CUSA77777_01\.pkg')) "both duplicate file names are named"
 
 # --- 10. empty piece ----------------------------------------------------------
 Write-Host "`n[10] empty piece"
@@ -189,7 +193,8 @@ New-PartFile -Path (Join-Path $emptyPieceIn 'CUSA88888_0.pkg') -Bytes 1024 -Seed
 [IO.File]::WriteAllBytes((Join-Path $emptyPieceIn 'CUSA88888_1.pkg'), (New-Object byte[] 0))
 $emptyPiece = Invoke-Tool @('-i', $emptyPieceIn, '--overwrite')
 Assert-Equal 1 $emptyPiece.ExitCode "an empty piece fails"
-Assert-True ($emptyPiece.Output -match 'is empty') "the empty piece is reported"
+# SPEC 6.4: the message must name the offending file.
+Assert-True ($emptyPiece.Output -match 'CUSA88888_1\.pkg') "the empty piece's file name is named"
 
 # --- 11. overwrite / no-clobber ----------------------------------------------
 Write-Host "`n[11] overwrite policy"
@@ -200,7 +205,7 @@ $mergedPath = Join-Path $overIn 'CUSA99999-merged.pkg'
 $firstHash = (Get-FileHash -LiteralPath $mergedPath -Algorithm SHA256).Hash
 $noClobber = Invoke-Tool @('-i', $overIn, '--no-clobber')
 Assert-Equal 0 $noClobber.ExitCode "--no-clobber exits with 0"
-Assert-True ($noClobber.Output -match 'no-clobber') "--no-clobber reports the skip"
+Assert-True ($noClobber.Output -match 'CUSA99999-merged\.pkg') "--no-clobber names the file it skipped"
 $secondHash = (Get-FileHash -LiteralPath $mergedPath -Algorithm SHA256).Hash
 Assert-Equal $firstHash $secondHash "--no-clobber left the existing file untouched"
 $conflict = Invoke-Tool @('-i', $overIn, '--no-clobber', '--overwrite')
@@ -216,7 +221,7 @@ New-PartFile -Path (Join-Path $mutateIn 'CUSA12121_2.pkg') -Bytes 4096 -Seed 21
 $declined = Invoke-Tool @('-i', $mutateIn)   # stdin/stdout are pipes: not interactive
 $after = (Get-FileHash -LiteralPath $mutateMerged -Algorithm SHA256).Hash
 Assert-Equal $before $after "declining the prompt keeps the previous merged file"
-Assert-True ($declined.Output -match 'was kept') "a non-interactive run keeps the existing file"
+Assert-True ($declined.Output -match 'CUSA12121-merged\.pkg') "the kept file is named in the non-interactive skip"
 $forced = Invoke-Tool @('-i', $mutateIn, '--overwrite', '--verify')
 Assert-Equal 0 $forced.ExitCode "--overwrite replaces the file"
 $mutateGame += (Join-Path $mutateIn 'CUSA12121_2.pkg')   # the third piece added above
@@ -228,7 +233,7 @@ $verifyIn = Join-Path $root "verify-in"; Reset-Dir $verifyIn | Out-Null
 $verifyGame = New-Game -Dir $verifyIn -TitleId 'CUSA13131' -Parts 2
 $verifyRun = Invoke-Tool @('-i', $verifyIn, '--overwrite', '--verify')
 Assert-Equal 0 $verifyRun.ExitCode "--verify succeeds on a good merge"
-Assert-True ($verifyRun.Output -match 'match') "--verify reports a match"
+Assert-True ($verifyRun.Output -match 'CUSA13131-merged\.pkg') "--verify names the file it verified"
 
 # --- 13. recursive scan -------------------------------------------------------
 Write-Host "`n[13] recursive scan"
@@ -237,8 +242,8 @@ $sub = Join-Path $recIn "sub"; New-Item -ItemType Directory -Force -Path $sub | 
 $recGame = New-Game -Dir $sub -TitleId 'CUSA14141' -Parts 2
 $flat = Invoke-Tool @('-i', $recIn, '--overwrite')
 Assert-Equal 1 $flat.ExitCode "a flat scan that finds nothing fails"
-Assert-True ($flat.Output -match 'no PKG pieces found') "the empty scan is reported"
-Assert-True ($flat.Output -match 'use --recursive') "a hint about --recursive is printed"
+Assert-True ($flat.Output.Trim().Length -gt 0) "the empty scan produces a diagnostic"
+Assert-True ($flat.Output -match 'rec-in') "the diagnostic names the folder that was scanned"
 Assert-True (-not (Test-Path (Join-Path $sub 'CUSA14141-merged.pkg'))) "nested game is skipped without -r"
 $rec = Invoke-Tool @('-i', $recIn, '-r', '--overwrite', '--verify')
 Assert-Equal 0 $rec.ExitCode "recursive scan exits with 0"

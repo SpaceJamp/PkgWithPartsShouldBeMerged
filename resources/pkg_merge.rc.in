@@ -4,7 +4,7 @@
 // The version numbers come from CMake so they can never drift from
 // project(... VERSION ...). Generated from pkg_merge.rc.in.
 //
-// SPDX-License-Identifier: GPL-3.0-only. See LICENSE and LICENSE.md for provenance.
+// SPDX-License-Identifier: GPL-3.0-only. See LICENSE for the licence text.
 #include <winver.h>
 
 #define VER_FILEVERSION             @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0

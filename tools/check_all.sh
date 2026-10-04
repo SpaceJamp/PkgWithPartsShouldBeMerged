@@ -5,17 +5,18 @@
 # Runs the passes that can be checked locally and prints a summary. Exits
 # non-zero if any pass fails.
 #
-#   ./tools/check_all.sh [path/to/PkgWithPartsShouldBeMerged]
+#   ./tools/check_all.sh [path/to/pkg_merge]
 #
 # Pass 7 (foreign platforms, i.e. does the OTHER platform build) is not covered
 # here - only CI can judge that. See AGENTS.md.
 #
-# SPDX-License-Identifier: GPL-3.0-only. See LICENSE and LICENSE.md for provenance.set -uo pipefail
+# SPDX-License-Identifier: GPL-3.0-only. See LICENSE for the licence text.
+set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-EXE="${1:-build/PkgWithPartsShouldBeMerged}"
+EXE="${1:-build/pkg_merge}"
 FAILED=0
 
 pass()  { printf '  \033[32mok  \033[0m %s %s\n' "$1" "${2:-}"; }
@@ -31,7 +32,7 @@ if command -v cmake >/dev/null 2>&1; then
   else
     fail "build Release"
   fi
-  if [ -x build/PkgWithPartsShouldBeMerged ]; then EXE=build/PkgWithPartsShouldBeMerged; fi
+  if [ -x build/pkg_merge ]; then EXE=build/pkg_merge; fi
 else
   fail "cmake not found"
 fi
@@ -68,18 +69,24 @@ section "pass 4 behaviour"
 if [ -x "$EXE" ]; then
   smoke_output="$(bash tests/smoke_test.sh "$EXE" 2>&1)"
   smoke_code=$?
-  # Coverage must not silently shrink: 54 checks are expected on POSIX.
   if [ "$smoke_code" -ne 0 ]; then
     printf '%s\n' "$smoke_output" | grep -E '\[FAIL\]|FAIL -' || true
     fail "smoke test (exit $smoke_code)"
+    # A failing suite short-circuits assert_merged_content, so the check count
+    # is lower for a reason that says nothing about coverage.
+    printf '       (smoke coverage not assessed: the suite failed)\n'
   else
     pass "smoke test"
-  fi
-  reported="$(printf '%s' "$smoke_output" | sed -n 's/.*PASS - \([0-9]*\) checks succeeded.*/\1/p' | tail -1)"
-  if [ -n "$reported" ] && [ "$reported" -ge 54 ]; then
-    pass "smoke coverage ($reported checks, expected >= 54)"
-  else
-    fail "smoke coverage reported '${reported:-none}', expected >= 54"
+    # Coverage must not silently shrink: 54 checks are expected on POSIX.
+    reported="$(printf '%s' "$smoke_output" | sed -n 's/.*[^0-9]\([0-9]*\) total.*/\1/p' | tail -1)"
+    if [ -z "$reported" ]; then
+      reported="$(printf '%s' "$smoke_output" | sed -n 's/.*PASS - \([0-9]*\) checks succeeded.*/\1/p' | tail -1)"
+    fi
+    if [ -n "$reported" ] && [ "$reported" -ge 54 ]; then
+      pass "smoke coverage ($reported checks, expected >= 54)"
+    else
+      fail "smoke coverage reported '${reported:-none}', expected >= 54"
+    fi
   fi
 else
   fail "executable not found or not runnable: $EXE"

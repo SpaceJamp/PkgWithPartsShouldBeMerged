@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-only
 name: build
 
-# SPDX-License-Identifier: GPL-3.0-only. See LICENSE and LICENSE.md for provenance.
+# SPDX-License-Identifier: GPL-3.0-only. See LICENSE for the licence text.
 on:
   push:
     branches: [master, main]
