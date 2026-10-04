@@ -47,7 +47,7 @@ jobs:
 
       # Guards against shipping a Debug build or losing ASLR/DEP/CFG.
       - name: Verify binary
-        run: python tools/verify_binary.py build/pkg_merge.exe 3.1.0
+        run: python tools/verify_binary.py build/pkg_merge.exe 1.0.0
 
       - uses: actions/upload-artifact@v4
         with:

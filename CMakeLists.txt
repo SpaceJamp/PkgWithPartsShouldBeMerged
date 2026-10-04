@@ -21,7 +21,7 @@ if(NOT DEFINED CACHE{CMAKE_BUILD_TYPE})
 endif()
 
 project(pkg_merge
-        VERSION 3.1.0
+        VERSION 1.0.0
         DESCRIPTION "Merge split PS4 PKG pieces back into a single PKG"
         LANGUAGES CXX)
 

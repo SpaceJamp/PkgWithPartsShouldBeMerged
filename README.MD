@@ -197,7 +197,7 @@ The repository carries the tools that check a build, and they are the same ones
 CI runs:
 
 ```bat
-python tools\verify_binary.py build\Release\pkg_merge.exe 3.1.0
+python tools\verify_binary.py build\Release\pkg_merge.exe 1.0.0
 ```
 
 This asserts the binary has no debug-CRT dependency and carries ASLR, DEP and

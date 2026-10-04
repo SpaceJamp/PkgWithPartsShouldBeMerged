@@ -138,8 +138,8 @@ fail, and **no partial or temporary file left behind**.
 ### Pass 6 - packaging
 
 ```bat
-python tools\verify_binary.py build\x64\Release\pkg_merge.exe 3.1.0
-python tools\verify_binary.py build\x86\Release\pkg_merge.exe 3.1.0
+python tools\verify_binary.py build\x64\Release\pkg_merge.exe 1.0.0
+python tools\verify_binary.py build\x86\Release\pkg_merge.exe 1.0.0
 ```
 
 Asserts: no debug-CRT imports, `DYNAMICBASE | NXCOMPAT | GUARD_CF`, plus

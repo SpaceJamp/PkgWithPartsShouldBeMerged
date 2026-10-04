@@ -128,7 +128,7 @@ foreach ($a in $Arch) {
         continue
     }
     $null = Invoke-Check "pass 6 verify binary ($a)" $exe {
-        python tools\verify_binary.py $exe 3.1.0
+        python tools\verify_binary.py $exe 1.0.0
     }
     $smokeCode = Invoke-Check "pass 4 smoke test ($a)" $exe {
         powershell -NoProfile -ExecutionPolicy Bypass -File tests\smoke_test.ps1 -Exe $exe -WorkRoot "$env:TEMP\PkgWithPartsShouldBeMerged-check-$a"
