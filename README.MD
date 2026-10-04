@@ -292,7 +292,3 @@ Copyright (c) 2026 SpaceJamp.
 
 You may use, study, modify and redistribute this, including commercially, provided
 you pass on the same freedoms and offer the source of anything you distribute.
-
-This licence covers everything in this repository. It does **not** retroactively
-license the earlier `SpaceJamp/PkgWithPartsShouldBeMerged` code, which remains all rights
-reserved.
