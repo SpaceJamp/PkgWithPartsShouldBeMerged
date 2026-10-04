@@ -3,6 +3,7 @@
 #include "pkgmerge/text.h"
 
 #include <array>
+#include <sstream>
 
 namespace pkgmerge {
 namespace {

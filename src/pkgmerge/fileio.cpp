@@ -170,6 +170,10 @@ std::int64_t InputFile::read(void* buffer, const std::size_t bytes, std::string*
     return 0;
   }
 #ifdef _WIN32
+  // Narrowing size_t -> DWORD is safe only because every caller passes at most
+  // kCopyBlockSize (1 MiB). A single read is never larger than one block, and
+  // the file offsets are tracked in 64-bit, so a multi-gigabyte file is many
+  // reads rather than one large one.
   const DWORD want = static_cast<DWORD>(bytes);
   DWORD got = 0;
   if (::ReadFile(handle_, buffer, want, &got, nullptr) == FALSE) {

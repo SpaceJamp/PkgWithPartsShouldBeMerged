@@ -525,16 +525,20 @@ MergeOutcome merge_set(const PieceSet& set, const MergeRequest& request) {
     }
     return outcome;
   }
-  progress.finish();
+  // The progress line is not finished here: the length check and --verify below
+  // can still fail, and Progress::stop() exists so that no 100% is ever shown for
+  // a merge that did not finish.
 
   // Spec section 7.2: verify the length before the file is published.
   std::uint64_t measured = 0;
   if (!temporary.measured_size(&measured, &error)) {
+    progress.stop();
     temporary.discard();
     platform::clear_active_temp_file();
     return failed(error);
   }
   if (measured != sizes_at_open) {
+    progress.stop();
     temporary.discard();
     platform::clear_active_temp_file();
     return failed(concat("the merged file came out at ", format_bytes(measured),
@@ -547,6 +551,7 @@ MergeOutcome merge_set(const PieceSet& set, const MergeRequest& request) {
   if (request.verify) {
     std::string problem;
     if (!verify_against_sources(temporary.path(), set, &problem)) {
+      progress.stop();
       temporary.discard();
       platform::clear_active_temp_file();
       return failed(concat(problem, "; the result was discarded"));
@@ -560,6 +565,7 @@ MergeOutcome merge_set(const PieceSet& set, const MergeRequest& request) {
   // may be renamed into place.
   std::uint64_t on_disk = 0;
   if (!file_size(temporary.path(), &on_disk, &error) || on_disk != measured) {
+    progress.stop();
     temporary.discard();
     platform::clear_active_temp_file();
     return failed(error.empty()
@@ -567,6 +573,10 @@ MergeOutcome merge_set(const PieceSet& set, const MergeRequest& request) {
                                display_path(temporary.path()), " was discarded")
                       : error);
   }
+
+  // Everything that could still reject the result has now passed, so the merge is
+  // genuinely finished and the progress line may say so.
+  progress.finish();
 
   if (!replace_file(temporary.path(), outcome.output, &error)) {
     temporary.discard();

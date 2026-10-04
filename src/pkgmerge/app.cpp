@@ -145,6 +145,9 @@ int run(const std::vector<OsString>& arguments) {
   std::size_t failed = 0;
   bool cancelled = false;
 
+  // Each set is taken by value: validate_set() records the size it measured on
+  // every piece, and `found` is const, so the copy is what isolates that mutation
+  // from the scan results. It is one copy per set, not per piece.
   for (PieceSet set : found) {
     // Rule 6 runs first, and completely: nothing is written for a set that does
     // not pass, while every other set carries on (spec sections 6 and 12).

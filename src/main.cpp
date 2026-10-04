@@ -37,7 +37,6 @@ int guarded(const std::vector<pkgmerge::OsString>& arguments) noexcept {
 #ifdef _WIN32
 
 int wmain(int argc, wchar_t** argv) {
-  static_cast<void>(argc);  // the arguments come from argv, which is UTF-16 here
   std::vector<pkgmerge::OsString> arguments;
   arguments.reserve(argc > 1 ? static_cast<std::size_t>(argc - 1) : 0U);
   for (int index = 1; index < argc; ++index) {

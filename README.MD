@@ -2,7 +2,7 @@
 
 # PkgWithPartsShouldBeMerged
 
-Merge the numbered pieces of a split PS4 `.pkg` back into a single installable file.
+Merge the numbered pieces of a split PS4 `.pkg` back into a single PKG.
 
 [![build](https://github.com/SpaceJamp/PkgWithPartsShouldBeMerged/actions/workflows/build.yml/badge.svg)](https://github.com/SpaceJamp/PkgWithPartsShouldBeMerged/actions/workflows/build.yml)
 
@@ -16,21 +16,21 @@ CUSA12345_0.pkg   CUSA12345_1.pkg   CUSA12345_2.pkg   ->   CUSA12345-merged.pkg
 
 ---
 
-> ### Status: under construction
+> ### Status: working
 >
-> There is no implementation in this repository yet. It is being written from
-> scratch against [`docs/SPEC.md`](./docs/SPEC.md), a behavioural specification
-> containing no code at all — see [Why a rewrite](#why-a-rewrite) below.
+> The implementation is in `src/`. It was written against
+> [`docs/SPEC.md`](./docs/SPEC.md), a behavioural specification that contains no
+> code at all, and it builds warning-free on Windows x86, Windows x64 and Linux
+> x64 — CI is green on all three.
 >
-> **`master` does not build yet, and the badge is red for that reason.** What is
-> here today is the specification, the test suites that will hold the
-> implementation to it, the bug-check gate, and the build and CI scaffolding.
->
-> Everything below documents the behaviour the implementation must have.
+> **No prebuilt binaries are published.** You build your own copy; see
+> [Building from source](#building-from-source). Two things are not yet covered
+> by any test: cancelling with the Escape key, and the folder dialogs, both of
+> which need a real console session or a desktop.
 
 ---
 
-## What it will do
+## What it does
 
 | | |
 | --- | --- |
@@ -50,7 +50,7 @@ CUSA12345_0.pkg   CUSA12345_1.pkg   CUSA12345_2.pkg   ->   CUSA12345-merged.pkg
    - **double-click** the executable and pick the folder in the dialog;
    - **drag** the folder onto the executable (Windows);
    - run it from a terminal: `pkg_merge.exe "D:\PS4 pieces"`.
-3. Wait for `[success] completed`.
+3. Wait for the summary line and then `Done.`
 
 On Linux with neither `zenity` nor `kdialog` installed, pass `--input` — the
 program works fine from a terminal and will say the dialog is unavailable rather
@@ -100,8 +100,9 @@ Press `ESC` or `Ctrl+C` to cancel a merge in progress.
 
 ## What it checks before merging
 
-The original tool trusted its input, which could silently produce a corrupt PKG
-while reporting success. Each set is validated first:
+A set that is missing pieces, or whose pieces are unreadable, could otherwise be
+stitched into a corrupt file while reporting success. Each set is validated
+first:
 
 | Check | On failure |
 | --- | --- |
@@ -113,8 +114,9 @@ while reporting success. Each set is validated first:
 | The written length equals the sum of the pieces | the result is discarded |
 | The root piece starts with the PKG magic `7F 43 4E 54` | warning only, the merge still runs |
 
-Titles are matched case-insensitively, so `CUSA12345_0.pkg` and `cusa12345_1.pkg`
-are treated as one game. Files that are not `.pkg`, and any `*-merged.pkg` this
+Titles are matched case-insensitively over ASCII, so `CUSA12345_0.pkg` and
+`cusa12345_1.pkg` are treated as one game, and the merged file is named with the
+identifier in upper case. Files that are not `.pkg`, and any `*-merged.pkg` this
 tool produced earlier, are ignored.
 
 ### Safety properties
@@ -229,13 +231,18 @@ targets.
 
 ```
 docs/SPEC.md             the behavioural specification the implementation is written against
+src/                     the implementation
 resources/               Windows version resource + application manifest
 tests/                   smoke and robustness suites
 tools/                   local bug-check gate, binary verifier
+```
+
+---
 
 ## License
 
-[GPL-3.0-only](LICENSE) — see [Why a rewrite](#why-a-rewrite) above for provenance and scope.
+[GPL-3.0-only](LICENSE). The full licence text is in [`LICENSE`](./LICENSE); the
+notice at the end of that file records the copyright.
 
 Copyright (c) 2026 SpaceJamp.
 

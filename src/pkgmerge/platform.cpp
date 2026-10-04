@@ -135,13 +135,30 @@ bool escape_pressed() {
   if (::GetConsoleMode(handle, &mode) == FALSE) {
     return false;  // no console: nothing to read a key from
   }
-  INPUT_RECORD record;
+  // Peek in batches rather than one record at a time. PeekConsoleInput does not
+  // consume the queue, so nothing the user typed is swallowed, but asking for a
+  // single record re-reads the head of the queue on every pass: a lone loop like
+  // that only ever examines the first pending keystroke, so Escape would go
+  // unnoticed whenever another key was typed first.
   DWORD available = 0;
-  while (::PeekConsoleInput(handle, &record, 1, &available) != FALSE && available > 0) {
-    if (record.EventType == KEY_EVENT && record.Event.KeyEvent.bKeyDown != 0 &&
-        record.Event.KeyEvent.wVirtualKeyCode == VK_ESCAPE) {
-      return true;
+  if (::GetNumberOfConsoleInputEvents(handle, &available) == FALSE || available == 0U) {
+    return false;
+  }
+  INPUT_RECORD batch[32];
+  DWORD remaining = available;
+  while (remaining > 0U) {
+    const DWORD want = (remaining < 32U) ? remaining : 32U;
+    DWORD got = 0;
+    if (::PeekConsoleInput(handle, batch, want, &got) == FALSE || got == 0U) {
+      break;  // the queue shrank underneath us, or the read failed
     }
+    for (DWORD index = 0; index < got; ++index) {
+      if (batch[index].EventType == KEY_EVENT && batch[index].Event.KeyEvent.bKeyDown != 0 &&
+          batch[index].Event.KeyEvent.wVirtualKeyCode == VK_ESCAPE) {
+        return true;
+      }
+    }
+    remaining -= got;
   }
   return false;
 #else
@@ -251,7 +268,10 @@ FolderChoice choose_input_folder(const std::filesystem::path& start_dir) {
       continue;
     }
     if (child == 0) {
-      // Only async-signal-safe calls between fork() and exec*().
+      // Between fork() and exec*() only async-signal-safe calls are made, with
+      // one exception: building `start` allocates. That is safe here because the
+      // program is single threaded, so no other thread can hold the allocator
+      // lock at the moment of the fork.
       ::close(pipe_fds[0]);
       if (::dup2(pipe_fds[1], STDOUT_FILENO) < 0) {
         ::_exit(127);
@@ -357,6 +377,12 @@ std::optional<std::uint64_t> available_space(const std::filesystem::path& dir) {
   // 32 bits on every supported platform, and the product is computed in 64.
   const std::uint64_t blocks = static_cast<std::uint64_t>(info.f_bavail);
   const std::uint64_t block_size = static_cast<std::uint64_t>(info.f_frsize);
+  // A zero block size means "cannot be determined", not "no space". Reporting 0
+  // would make the caller refuse every merge with a message about free space
+  // that is not the real problem (some pseudo and network filesystems do this).
+  if (block_size == 0U) {
+    return std::nullopt;
+  }
   return blocks * block_size;
 #endif
 }

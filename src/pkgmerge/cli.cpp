@@ -65,7 +65,7 @@ bool looks_like_option(const std::optional<std::string>& name) {
 std::string usage_text() {
   return concat(kProgramName, "\n",
                 "Merges the numbered pieces of a split PS4 PKG back into a single\n",
-                "installable file.\n",
+                "PKG.\n",
                 "\n",
                 "Usage:\n",
                 "  ", kProgramName, " [OPTIONS] [INPUT_DIR [OUTPUT_DIR]]\n",
@@ -118,8 +118,11 @@ ParseResult parse_arguments(const std::vector<OsString>& arguments) {
         options_ended ? std::nullopt : as_ascii(argument);
 
     if (!looks_like_option(name)) {
-      // A positional: the first two are the input and output folders. A folder
-      // dropped on the executable lands here and behaves exactly like --input.
+      // A positional fills the first of input/output that is still unset, rather
+      // than blindly being the first one. So "prog IN OUT" sets both, while
+      // "prog -i IN OUT" sets IN as the input and OUT as the output folder, which
+      // is what someone typing that means. A folder dropped on the executable
+      // arrives here and behaves exactly like --input.
       if (positional == 0 && !options.input_given) {
         options.input = std::filesystem::path(argument);
         options.input_given = true;
