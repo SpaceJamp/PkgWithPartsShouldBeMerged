@@ -238,7 +238,9 @@ assert_eq 0 "$EXIT_CODE" "a second run succeeds"
 assert_merged_content "$idem_in" CUSA16161 "$idem_in"/CUSA16161_[0-9].pkg
 count="$(find "$idem_in" -name '*-merged.pkg' | wc -l | tr -d ' ')"
 assert_eq 1 "$count" "only one merged file exists"
-count="$(find "$idem_in" -name '*.merging.tmp' | wc -l | tr -d ' ')"
+# SPEC 18.2 leaves the temporary file's name to the implementer, so this must
+# not filter on one: the directory should hold nothing but .pkg files.
+count="$(find "$idem_in" -type f ! -name '*.pkg' | wc -l | tr -d ' ')"
 assert_eq 0 "$count" "no temporary files are left behind"
 
 rm -rf "$WORK_ROOT"

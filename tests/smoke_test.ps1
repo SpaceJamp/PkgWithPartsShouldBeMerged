@@ -270,7 +270,9 @@ $again = Invoke-Tool @('-i', $idemIn, '--overwrite', '--verify')
 Assert-Equal 0 $again.ExitCode "a second run succeeds"
 Assert-MergedContent -OutDir $idemIn -TitleId 'CUSA16161' -Sources $idemGame
 Assert-Equal 1 (@(Get-ChildItem -LiteralPath $idemIn -Filter '*-merged.pkg')).Count "only one merged file exists"
-Assert-Equal 0 (@(Get-ChildItem -LiteralPath $idemIn -Filter '*.tmp' -Recurse)).Count "no temporary files are left behind"
+# SPEC 18.2 leaves the temporary file's name to the implementer, so this must
+# not filter on one: the directory should hold nothing but .pkg files.
+Assert-Equal 0 (@(Get-ChildItem -LiteralPath $idemIn -Recurse -File | Where-Object { $_.Extension -ne '.pkg' })).Count "no temporary files are left behind"
 
 # --- summary ------------------------------------------------------------------
 Write-Host ""

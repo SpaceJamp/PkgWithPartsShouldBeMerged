@@ -71,9 +71,15 @@ function Invoke-Tool([string[]]$ToolArgs) {
     return [pscustomobject]@{ ExitCode = $LASTEXITCODE; Output = $output }
 }
 
+# SPEC 18.2 leaves the temporary file's name to the implementer, so this must
+# not filter on a name. Every fixture directory contains only .pkg files, so
+# anything else present is a leftover - a stronger check than matching one
+# hard-coded suffix, and it still catches a partial or temporary file whatever
+# the implementation chose to call it.
 function Assert-NoLeftovers([string]$Dir, [string]$What) {
-    $tmp = @(Get-ChildItem -LiteralPath $Dir -Filter '*.merging.tmp' -Recurse -ErrorAction SilentlyContinue)
-    Assert-True ($tmp.Count -eq 0) "$What leaves no temporary file behind"
+    $stray = @(Get-ChildItem -LiteralPath $Dir -Recurse -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.Extension -ne '.pkg' })
+    Assert-True ($stray.Count -eq 0) "$What leaves no file behind other than the .pkg pieces and the merged output"
 }
 
 Write-Host "PkgWithPartsShouldBeMerged robustness test (pass 4)" -ForegroundColor Cyan
