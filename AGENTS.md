@@ -20,34 +20,35 @@ result is reproducible.
 
 ---
 
-## 0b. Current state: rewrite in progress
+## 0b. Current state: implementation not yet written
 
-The previous implementation derived from unlicensed upstream code, which is why
-this project could never offer a licence of its own. It has been deleted from
-the tree and survives only in the git history, under `main.cpp` before the rename
-and `main.cpp.legacy` after. Its replacement is being written from scratch
-against `docs/SPEC.md` - behaviour only, no code.
+This repository contains the specification, the test suites, the bug-check gate
+and the build scaffolding — but **no implementation**. It is being written from
+scratch against `docs/SPEC.md`, which is behaviour only and contains no code.
 
-Rules while the rewrite is outstanding:
+The point of writing it fresh is that this code can carry a real licence. An
+earlier implementation existed elsewhere and descended from two upstreams that
+never declared one, so it was all rights reserved and could not be licensed or
+cleanly extended. None of that code is in this repository or its history.
 
-- **Do not restore or copy the old implementation.** `git show <sha>:main.cpp`
-  still retrieves it, so treat it as unavailable rather than convenient. It is
-  all-rights-reserved upstream code and a permanent licensing exception. If you
-  find a behaviour worth preserving, record it in the spec instead.
-- **Do not write the replacement in this context.** A session that has read the
-  old implementation produces a derivative, not a clean-room rewrite. The
-  replacement must be written in a fresh context that has only ever seen
-  `docs/SPEC.md`.
-- **The existing test suites assert on message wording from the old
-  implementation.** That wording is protected expression. Do *not* make the new
-  implementation match it. Relax those assertions to what `docs/SPEC.md` actually
-  requires: the exit code, the side effects on disk, and - for the validation
-  rules in spec section 6 - that the output *names the offending file or number*.
-  Wording is deliberately unspecified; copying it to make a test pass is the
-  failure mode to avoid. This is the last remaining licensing exception in the
-  tree, so finish it.
-- Keep the credits for Tustin & 0x199 and aldo-o. The rewrite does not erase the
-  lineage, and the attribution is what makes the licensing position honest.
+Rules while the implementation is outstanding:
+
+- **Do not go looking for the earlier implementation.** Treat it as unavailable
+  rather than convenient. If you find a behaviour worth preserving, record it in
+  the spec instead.
+- **Do not write the implementation in a context that has read it.** Such a
+  session produces a derivative, not independent work, and would undo the reason
+  this repository exists. The implementation must be written in a fresh context
+  that has only ever seen `docs/SPEC.md`.
+- **The existing test suites assert on message wording carried over from that
+  earlier implementation.** Do *not* make the new implementation match it. Relax
+  those assertions to what `docs/SPEC.md` actually requires: the exit code, the
+  side effects on disk, and — for the validation rules in spec section 6 — that
+  the output *names the offending file or number*. Wording is deliberately
+  unspecified; copying it to satisfy a test is the failure mode to avoid.
+- Keep the credits for Tustin & 0x199 and aldo-o. The upstream repositories are
+  the only place that earlier code exists now, which makes the attribution more
+  load-bearing than ever, not less.
 
 ## 1. Pass matrix
 
@@ -206,9 +207,11 @@ all before reporting. When a fix lands, say explicitly which passes were re-run.
   because tooling trusts the header. Adding a licence *claim* different from
   GPL-3.0-only still needs the user to say so in the session.
 - **GPL-3.0 section 4 matters here.** You may only apply the GPL to code you hold
-  rights in. The predecessor `SpaceJamp/pkg-merge` code is all rights reserved and
-  must never be relicensed under the GPL or copied in; `LICENSE.md` records this
-  and the credits are load-bearing, not decoration.
+  rights in. No earlier implementation of this tool is in this repository or its
+  history, and none may be copied in or relicensed under the GPL.
+  `LICENSE.md` records this, and the credits are load-bearing, not decoration:
+  they are what makes this provenance honest, and they stay even though the
+  upstream repositories are the only place that code now exists.
 - **Always credit upstream work** in README and file headers: Tustin & 0x199
   (original), aldo-o (fork lineage), btzy (folder dialog). Do not present
   inherited code as new.

@@ -238,14 +238,14 @@ tools/                   local bug-check gate, binary verifier
 
 ## Why a rewrite
 
-The earlier implementation of this tool - which lived in
-[`SpaceJamp/PkgWithPartsShouldBeMerged`](https://github.com/SpaceJamp/PkgWithPartsShouldBeMerged) - derives from two
-upstream projects that never declared a license:
+An earlier implementation of this tool, descended from a fork of
+[aldo-o/pkg-merge][aldo], derived from two upstream projects that never declared
+a license:
 
-- **[Tustin & 0x199](https://github.com/Tustin/PkgWithPartsShouldBeMerged)** — the original
-  `PkgWithPartsShouldBeMerged`. The core idea, the `<TITLE_ID>_<N>.pkg` layout and the shape of the
+- **[Tustin & 0x199](https://github.com/Tustin/pkg-merge)**[tustin] — the original
+  `pkg-merge`. The core idea, the `<TITLE_ID>_<N>.pkg` layout and the shape of the
   merging code are theirs.
-- **[aldo-o](https://github.com/aldo-o/PkgWithPartsShouldBeMerged)** — the fork that added macOS
+- **[aldo-o](https://github.com/aldo-o/pkg-merge)**[aldo] — the fork that added macOS
   support and the native folder picker (`v3.0b`), and later the `-i` / `-o`
   arguments and an optional output directory.
 - **[btzy](https://github.com/btzy/nativefiledialog-extended)** — author of the
@@ -263,8 +263,13 @@ the PKG container format and the required behaviour rather than from the previou
 implementation. The code is then written from that specification, which is what
 makes this repository's GPL-3.0 licence a clean claim rather than a borrowed one.
 
-The predecessor repository keeps the full history - 27 commits, including the
-upstream lineage - and is retained as the record of what came before.
+The upstream repositories are untouched and remain public: [Tustin/pkg-merge][tustin]
+(last commit 2018) and [aldo-o/pkg-merge][aldo] (last commit 2025). They are where
+this tool's history lives, and where any question about the original code should
+be directed.
+
+[tustin]: https://github.com/Tustin/pkg-merge
+[aldo]: https://github.com/aldo-o/pkg-merge
 
 ---
 
@@ -273,9 +278,9 @@ upstream lineage - and is retained as the record of what came before.
 This tool would not exist without the people who built it first, and none of this
 work is theirs to lose:
 
-- **[Tustin & 0x199](https://github.com/Tustin/PkgWithPartsShouldBeMerged)** — the original
-  `PkgWithPartsShouldBeMerged`, and the idea this tool implements.
-- **[aldo-o](https://github.com/aldo-o/PkgWithPartsShouldBeMerged)** — the fork that brought it to
+- **[Tustin & 0x199](https://github.com/Tustin/pkg-merge)** — the original
+  `pkg-merge`, and the idea this tool implements.
+- **[aldo-o](https://github.com/aldo-o/pkg-merge)** — the fork that brought it to
   macOS and gave it a command line.
 - **[btzy](https://github.com/btzy/nativefiledialog-extended)** — the folder
   dialog the earlier versions used.

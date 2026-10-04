@@ -18,14 +18,14 @@ provided any distributed work carries this same licence and offers its source.
 
 ## What it does not cover
 
-**Any earlier version of the code.** This licence applies from the date it was
-added. It cannot and does not retroactively license the implementation that lived
-in [`SpaceJamp/pkg-merge`](https://github.com/SpaceJamp/pkg-merge), which remains
-**all rights reserved**.
+**Any earlier implementation.** This licence applies from the date it was added.
+It does not, and cannot retroactively, license the implementation that existed
+before this repository — which was all rights reserved and was never published
+here. No part of that code is present in this repository or its history.
 
-That matters if you obtained a copy of that code before this repository existed:
-you hold no rights to it. If you need to use, redistribute or build on it, ask the
-original authors.
+If you obtained a copy of that earlier implementation elsewhere, you hold no
+rights to it from this licence. To use, redistribute or build on it, ask the
+original authors, whose repositories are listed below and remain public.
 
 GPL-3.0 section 4 is the operative constraint here: you may only apply these
 terms to a work if you hold copyright or licence rights in it. This repository
@@ -54,9 +54,10 @@ was re-implemented from a written specification instead. `docs/SPEC.md` describe
 the required behaviour and contains no code; the implementation is written from
 that specification by a process that has not read the earlier implementation.
 
-The predecessor repository is retained, with its full history, as the record of
-what came before. It is **not** covered by this licence and must not be relicensed
-under it.
+Neither upstream repository nor any intermediate fork is covered by this licence,
+and none of them may be relicensed under it — that would require rights the
+current holder does not have. Both remain public and are where the history of
+this tool, and any question about the original code, belongs.
 
 ## Credits
 

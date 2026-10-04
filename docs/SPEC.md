@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: GPL-3.0-only -->
-# pkg-merge — behavioural specification
+# PkgWithPartsShouldBeMerged — behavioural specification
 
 **This document is the complete input to a clean-room reimplementation.** It
 describes *what* the program must do and *how it must behave*, and contains no
@@ -7,7 +7,7 @@ code, no algorithms, no data structures and no implementation detail. An
 implementer working only from this document, who has never seen the previous
 implementation, produces independent work.
 
-Do not read the existing `main.cpp` while implementing against this document —
+Do not read the previous implementation while working from this document —
 see [Clean-room protocol](#clean-room-protocol).
 
 ---
@@ -149,7 +149,7 @@ An existing output file must never be deleted without one of those decisions.
 ## 10. Command-line interface
 
 ```
-pkg_merge [OPTIONS] [INPUT_DIR [OUTPUT_DIR]]
+PkgWithPartsShouldBeMerged [OPTIONS] [INPUT_DIR [OUTPUT_DIR]]
 ```
 
 | Option | Meaning |
@@ -279,6 +279,70 @@ An implementation is correct when:
 
 ---
 
+## 18. Notes for the implementer
+
+### 18.1 Wording is not specified, and is not a test contract
+
+This document specifies **behaviour**, not phrasing. §6 says a failure message
+must *name the offending file*; it does not say what the sentence looks like.
+§14 requires a summary line with three counts; it does not prescribe its layout.
+
+Write your own wording. If a test in `tests/` asserts on a specific phrase that
+came from the previous implementation, **change the test, not the message** —
+that phrase is the previous author's expression, and matching it would make your
+implementation a derivative of theirs. Relax such an assertion to what this
+document actually requires: the exit code, the side effects on disk, and that a
+diagnostic names the file or number concerned.
+
+Two exceptions where text *is* fixed, because they are the interface rather than
+prose: the option names in §10, and the output filename shape in §7.
+
+### 18.2 Decisions this document deliberately leaves to you
+
+Each of these is a legitimate choice with no single right answer. Pick one,
+write it down in your commit message, and move on:
+
+- how sets are ordered relative to one another during a scan (by title, by first
+  piece seen, or by size — all are acceptable)
+- the fixed block size used for streaming, and whether it is fixed or adaptive
+- the temporary file's name
+- the exact progress-bar layout and the wording of every message
+- the internal structure: how pieces are represented, how validation is staged
+- whether progress is reported per piece or across the whole scan
+- the exit path used when several signals arrive at once
+
+### 18.3 Things that are easy to get subtly wrong
+
+- **Piece numbers sort numerically, not as text.** `10` follows `9`. Sorting the
+  file names as strings puts `10` before `2` and produces a corrupt result with
+  no error.
+- **Never reuse a running total as a per-file offset.** If you track bytes across
+  the whole merge, that counter is not the count for the piece currently being
+  copied. Mixing them silently writes only part of each piece.
+- **Sizes are 64-bit on every target**, including x86. A 32-bit build must still
+  merge more than 4 GiB (§8, §17.6), so no size may be computed or compared in a
+  32-bit type.
+- **Rename only after the size check passes** (§7.1, §7.2). Publishing first and
+  verifying afterwards leaves a corrupt file on a failure.
+- **A validation failure aborts one set, not the scan** (§6, §12). Two good sets
+  and one bad one must produce two merged files.
+- **Do not delete or truncate an existing output file** without applying §9
+  first.
+
+### 18.4 Before you claim it is done
+
+`AGENTS.md` defines an eight-stage check and this project treats it as the
+definition of done. In particular:
+
+- the reported check counts are floors, not targets: smoke **65** on Windows and
+  **54** on POSIX, robustness **27**. A drop is a coverage regression.
+- **Do not cut a release or a tag while any stage is red**, and do not attach
+  prebuilt executables — users build their own.
+- CI is the only authority on whether the other targets build. Local x64 Windows
+  results say nothing about Linux or x86.
+
+---
+
 ## Clean-room protocol
 
 For the rewrite to carry any weight as independent work:
@@ -291,11 +355,15 @@ For the rewrite to carry any weight as independent work:
    the implementation must not be the same context.
 3. Record in the repository: this document, the commit that introduces the
    implementation, and a statement of who wrote what.
-4. Keep the previous implementation reachable in the git history — do not rewrite
-   history — and keep the credits for Tustin & 0x199 and aldo-o in place. The
-   rewrite does not erase the lineage; it produces code that is separately
-   attributable.
+4. Keep the credits for Tustin & 0x199 and aldo-o in place. Writing this code does
+   not erase the lineage — it produces work that is separately attributable, which
+   is only possible because the lineage was recorded honestly.
 
 The specification deliberately describes *behaviour*, not *mechanism*. Where this
 document says "streamed in fixed-size blocks" it is stating a requirement that can
 be verified, not an instruction to use a particular buffering strategy.
+
+**Scope note.** No earlier implementation of this tool exists in this repository
+or its history. Nothing here is derived from one, and retrieving one would break
+the clean room this document depends on. The credits in the README record where
+the tool came from; they are not an invitation to go and read that code.
