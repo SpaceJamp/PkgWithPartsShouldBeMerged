@@ -1,17 +1,16 @@
-# SPDX-License-Identifier: MIT
-# pkg-merge smoke test - Windows PowerShell
+# SPDX-License-Identifier: GPL-3.0-only
+# PkgWithPartsShouldBeMerged smoke test - Windows PowerShell
 #
 # Builds a synthetic set of "PKG pieces" (deterministic bytes, the root piece
 # carries the 0x7F "CNT" magic) and exercises the merge tool end to end,
 # including every exit code path.
 #
-# Usage:  pwsh -File tests/smoke_test.ps1 -Exe path\to\pkg_merge.exe
+# Usage:  pwsh -File tests/smoke_test.ps1 -Exe path\to\PkgWithPartsShouldBeMerged.exe
 #
-# No license has been granted for this code - see LICENSE.md at the repository root.
-[CmdletBinding()]
+# SPDX-License-Identifier: GPL-3.0-only. See LICENSE and LICENSE.md for provenance.[CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string]$Exe,
-    [string]$WorkRoot = (Join-Path ([IO.Path]::GetTempPath()) "pkg-merge-smoke")
+    [string]$WorkRoot = (Join-Path ([IO.Path]::GetTempPath()) "PkgWithPartsShouldBeMerged-smoke")
 )
 
 $ErrorActionPreference = 'Stop'
@@ -88,7 +87,7 @@ function Assert-MergedContent([string]$OutDir, [string]$TitleId, [string[]]$Sour
     Assert-True $same "$TitleId-merged.pkg is byte identical to the concatenation of its pieces"
 }
 
-Write-Host "pkg-merge smoke test" -ForegroundColor Cyan
+Write-Host "PkgWithPartsShouldBeMerged smoke test" -ForegroundColor Cyan
 Write-Host "  exe: $Exe"
 Assert-True (Test-Path -LiteralPath $Exe) "executable exists"
 

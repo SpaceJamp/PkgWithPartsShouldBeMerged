@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-3.0-only
 """Verify the packaging properties of a built pkg_merge binary.
 
 Checks the things that silently regress: a debug-CRT dependency, a missing

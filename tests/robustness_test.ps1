@@ -1,16 +1,15 @@
-# SPDX-License-Identifier: MIT
-# pkg-merge robustness test - hostile input (bug-check pass 4)
+# SPDX-License-Identifier: GPL-3.0-only
+# PkgWithPartsShouldBeMerged robustness test - hostile input (bug-check pass 4)
 #
 # Every case must produce a clear diagnostic and a non-zero exit code, must not
 # crash, and must never leave a partial or temporary file behind.
 #
-# Usage:  pwsh -File tests/robustness_test.ps1 -Exe path\to\pkg_merge.exe
+# Usage:  pwsh -File tests/robustness_test.ps1 -Exe path\to\PkgWithPartsShouldBeMerged.exe
 #
-# No license has been granted for this code - see LICENSE.md at the repository root.
-[CmdletBinding()]
+# SPDX-License-Identifier: GPL-3.0-only. See LICENSE and LICENSE.md for provenance.[CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string]$Exe,
-    [string]$WorkRoot = (Join-Path ([IO.Path]::GetTempPath()) "pkg-merge-hostile"),
+    [string]$WorkRoot = (Join-Path ([IO.Path]::GetTempPath()) "PkgWithPartsShouldBeMerged-hostile"),
     # The >2 GiB case needs a 3 GiB scratch file; opt out with -SkipLarge.
     [switch]$SkipLarge
 )
@@ -66,7 +65,7 @@ function Assert-NoLeftovers([string]$Dir, [string]$What) {
     Assert-True ($tmp.Count -eq 0) "$What leaves no temporary file behind"
 }
 
-Write-Host "pkg-merge robustness test (pass 4)" -ForegroundColor Cyan
+Write-Host "PkgWithPartsShouldBeMerged robustness test (pass 4)" -ForegroundColor Cyan
 Write-Host "  exe: $Exe"
 
 # --- 1. filenames that are not pieces ---------------------------------------

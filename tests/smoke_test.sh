@@ -1,17 +1,16 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: MIT
-# pkg-merge smoke test - POSIX (macOS / Linux)
+# SPDX-License-Identifier: GPL-3.0-only
+# PkgWithPartsShouldBeMerged smoke test - POSIX (macOS / Linux)
 #
 # Mirrors tests/smoke_test.ps1. The folder dialog is skipped by always passing
 # an explicit input directory.
 #
-# Usage: ./tests/smoke_test.sh [path/to/pkg_merge]
+# Usage: ./tests/smoke_test.sh [path/to/PkgWithPartsShouldBeMerged]
 #
-# No license has been granted for this code - see LICENSE.md at the repository root.
-set -uo pipefail
+# SPDX-License-Identifier: GPL-3.0-only. See LICENSE and LICENSE.md for provenance.set -uo pipefail
 
-EXE="${1:-./build/pkg_merge}"
-WORK_ROOT="${TMPDIR:-/tmp}/pkg-merge-smoke-$$"
+EXE="${1:-./build/PkgWithPartsShouldBeMerged}"
+WORK_ROOT="${TMPDIR:-/tmp}/PkgWithPartsShouldBeMerged-smoke-$$"
 CHECKS=0
 FAILURES=0
 
@@ -70,7 +69,7 @@ assert_merged_content() {
   assert_eq "$expected" "$actual" "$title-merged.pkg is byte identical to its pieces"
 }
 
-printf '\033[36mpkg-merge smoke test\033[0m\n'
+printf '\033[36mPkgWithPartsShouldBeMerged smoke test\033[0m\n'
 printf '  exe: %s\n' "$EXE"
 [ -x "$EXE" ] || { echo "executable not found or not runnable: $EXE" >&2; exit 2; }
 assert_true 0 "executable exists"

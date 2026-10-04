@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: MIT -->
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
 # AGENTS.md - working rules for this repository
 
 These rules apply to **every** change in this repo, in every session.
@@ -200,10 +200,15 @@ all before reporting. When a fix lands, say explicitly which passes were re-run.
 
 ## 4. House rules
 
-- **Never add a license claim** - no `SPDX-License-Identifier` line, no
-  `LICENSE`/`COPYING` file, no "MIT licensed" string - unless the user states in
-  this session that a license was chosen. The project has none (`LICENSE.md`),
-  and it descends from an unlicensed upstream.
+- **The project is GPL-3.0-only.** Every source file carries
+  `SPDX-License-Identifier: GPL-3.0-only` and `LICENSE` holds the canonical text.
+  Keep them in agreement: a mismatched identifier is worse than either alone,
+  because tooling trusts the header. Adding a licence *claim* different from
+  GPL-3.0-only still needs the user to say so in the session.
+- **GPL-3.0 section 4 matters here.** You may only apply the GPL to code you hold
+  rights in. The predecessor `SpaceJamp/pkg-merge` code is all rights reserved and
+  must never be relicensed under the GPL or copied in; `LICENSE.md` records this
+  and the credits are load-bearing, not decoration.
 - **Always credit upstream work** in README and file headers: Tustin & 0x199
   (original), aldo-o (fork lineage), btzy (folder dialog). Do not present
   inherited code as new.

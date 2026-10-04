@@ -1,8 +1,7 @@
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-3.0-only
 name: build
 
-# No license has been granted for this project - see LICENSE.md.
-
+# SPDX-License-Identifier: GPL-3.0-only. See LICENSE and LICENSE.md for provenance.
 on:
   push:
     branches: [master, main]

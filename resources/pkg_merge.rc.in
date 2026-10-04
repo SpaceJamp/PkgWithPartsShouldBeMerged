@@ -1,11 +1,10 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-only
 // pkg-merge - Windows resources (version info + manifest).
 //
 // The version numbers come from CMake so they can never drift from
 // project(... VERSION ...). Generated from pkg_merge.rc.in.
 //
-// No license has been granted for this code - see LICENSE.md at the repository root.
-
+// SPDX-License-Identifier: GPL-3.0-only. See LICENSE and LICENSE.md for provenance.
 #include <winver.h>
 
 #define VER_FILEVERSION             @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0

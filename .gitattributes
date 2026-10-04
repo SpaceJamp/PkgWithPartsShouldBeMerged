@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-3.0-only
 # Keep shell scripts and CI definitions LF-only: CRLF breaks "/bin/sh" scripts
 # with "bad interpreter" errors on Linux and macOS.
 *.sh   text eol=lf

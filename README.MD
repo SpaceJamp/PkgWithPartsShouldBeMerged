@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: MIT -->
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
 
 # PkgWithPartsShouldBeMerged
 
@@ -183,8 +183,8 @@ clear the cached value first: `cmake -U CMAKE_BUILD_TYPE -S . -B build -G Ninja`
 
 | CMake option | Default | Meaning |
 | --- | --- | --- |
-| `PKG_MERGE_WERROR` | `OFF` | Treat compiler warnings as errors. |
-| `PKG_MERGE_COPYRIGHT` | credits the original authors | Text embedded in the Windows version resource. |
+| `PkgWithPartsShouldBeMerged_WERROR` | `OFF` | Treat compiler warnings as errors. |
+| `PkgWithPartsShouldBeMerged_COPYRIGHT` | credits the original authors | Text embedded in the Windows version resource. |
 
 ### Keeping your copy up to date
 
@@ -239,13 +239,13 @@ tools/                   local bug-check gate, binary verifier
 ## Why a rewrite
 
 The earlier implementation of this tool - which lived in
-[`SpaceJamp/pkg-merge`](https://github.com/SpaceJamp/pkg-merge) - derives from two
+[`SpaceJamp/PkgWithPartsShouldBeMerged`](https://github.com/SpaceJamp/PkgWithPartsShouldBeMerged) - derives from two
 upstream projects that never declared a license:
 
-- **[Tustin & 0x199](https://github.com/Tustin/pkg-merge)** — the original
-  `pkg-merge`. The core idea, the `<TITLE_ID>_<N>.pkg` layout and the shape of the
+- **[Tustin & 0x199](https://github.com/Tustin/PkgWithPartsShouldBeMerged)** — the original
+  `PkgWithPartsShouldBeMerged`. The core idea, the `<TITLE_ID>_<N>.pkg` layout and the shape of the
   merging code are theirs.
-- **[aldo-o](https://github.com/aldo-o/pkg-merge)** — the fork that added macOS
+- **[aldo-o](https://github.com/aldo-o/PkgWithPartsShouldBeMerged)** — the fork that added macOS
   support and the native folder picker (`v3.0b`), and later the `-i` / `-o`
   arguments and an optional output directory.
 - **[btzy](https://github.com/btzy/nativefiledialog-extended)** — author of the
@@ -261,7 +261,7 @@ produces something that can be licensed and maintained on its own terms.
 contains no code, no algorithms and no data structures, and it was written from
 the PKG container format and the required behaviour rather than from the previous
 implementation. The code is then written from that specification, which is what
-makes this repository's MIT licence a clean claim rather than a borrowed one.
+makes this repository's GPL-3.0 licence a clean claim rather than a borrowed one.
 
 The predecessor repository keeps the full history - 27 commits, including the
 upstream lineage - and is retained as the record of what came before.
@@ -273,9 +273,9 @@ upstream lineage - and is retained as the record of what came before.
 This tool would not exist without the people who built it first, and none of this
 work is theirs to lose:
 
-- **[Tustin & 0x199](https://github.com/Tustin/pkg-merge)** — the original
-  `pkg-merge`, and the idea this tool implements.
-- **[aldo-o](https://github.com/aldo-o/pkg-merge)** — the fork that brought it to
+- **[Tustin & 0x199](https://github.com/Tustin/PkgWithPartsShouldBeMerged)** — the original
+  `PkgWithPartsShouldBeMerged`, and the idea this tool implements.
+- **[aldo-o](https://github.com/aldo-o/PkgWithPartsShouldBeMerged)** — the fork that brought it to
   macOS and gave it a command line.
 - **[btzy](https://github.com/btzy/nativefiledialog-extended)** — the folder
   dialog the earlier versions used.
@@ -286,8 +286,13 @@ If you use this, please pass the credit on.
 
 ## License
 
-[MIT](LICENSE) — see [`LICENSE.md`](./LICENSE.md) for provenance and scope.
+[GPL-3.0-only](LICENSE) — see [`LICENSE.md`](./LICENSE.md) for provenance and scope.
 
-Copyright (c) 2026 SpaceJamp. The MIT licence covers everything in this
-repository. It does **not** retroactively license the earlier
-`SpaceJamp/pkg-merge` code, which remains all rights reserved.
+Copyright (c) 2026 SpaceJamp.
+
+You may use, study, modify and redistribute this, including commercially, provided
+you pass on the same freedoms and offer the source of anything you distribute.
+
+This licence covers everything in this repository. It does **not** retroactively
+license the earlier `SpaceJamp/PkgWithPartsShouldBeMerged` code, which remains all rights
+reserved.

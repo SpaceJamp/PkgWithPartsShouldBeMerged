@@ -1,22 +1,21 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: MIT
-# pkg-merge - local bug-check gate (POSIX: macOS / Linux)
+# SPDX-License-Identifier: GPL-3.0-only
+# PkgWithPartsShouldBeMerged - local bug-check gate (POSIX: macOS / Linux)
 #
 # Runs the passes that can be checked locally and prints a summary. Exits
 # non-zero if any pass fails.
 #
-#   ./tools/check_all.sh [path/to/pkg_merge]
+#   ./tools/check_all.sh [path/to/PkgWithPartsShouldBeMerged]
 #
 # Pass 7 (foreign platforms, i.e. does the OTHER platform build) is not covered
 # here - only CI can judge that. See AGENTS.md.
 #
-# No license has been granted for this code - see LICENSE.md at the repository root.
-set -uo pipefail
+# SPDX-License-Identifier: GPL-3.0-only. See LICENSE and LICENSE.md for provenance.set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-EXE="${1:-build/pkg_merge}"
+EXE="${1:-build/PkgWithPartsShouldBeMerged}"
 FAILED=0
 
 pass()  { printf '  \033[32mok  \033[0m %s %s\n' "$1" "${2:-}"; }
@@ -32,7 +31,7 @@ if command -v cmake >/dev/null 2>&1; then
   else
     fail "build Release"
   fi
-  if [ -x build/pkg_merge ]; then EXE=build/pkg_merge; fi
+  if [ -x build/PkgWithPartsShouldBeMerged ]; then EXE=build/PkgWithPartsShouldBeMerged; fi
 else
   fail "cmake not found"
 fi

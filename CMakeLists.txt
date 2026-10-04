@@ -1,7 +1,8 @@
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-3.0-only
 # pkg-merge - build definition
 #
-# No license has been granted for this code - see LICENSE.md at the repository root.
+# SPDX-License-Identifier: GPL-3.0-only
+# See LICENSE for the licence and LICENSE.md for provenance.
 cmake_minimum_required(VERSION 3.24)
 
 # ---------------------------------------------------------------------------
@@ -46,9 +47,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(PKG_MERGE_WERROR "Treat compiler warnings as errors" OFF)
 
-# Embedded in the Windows version resource. Keep it factual: the code currently
-# has no license, so do not claim one here until LICENSE.md says so.
-set(PKG_MERGE_COPYRIGHT "Original authors: Tustin & 0x199 - no license granted"
+# Embedded in the Windows version resource.
+set(PKG_MERGE_COPYRIGHT "Copyright (c) 2026 SpaceJamp - GPL-3.0-only. Original pkg-merge by Tustin & 0x199."
     CACHE STRING "Copyright string embedded in the Windows version resource")
 
 # ---------------------------------------------------------------------------

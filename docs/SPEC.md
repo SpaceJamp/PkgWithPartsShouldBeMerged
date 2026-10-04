@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: MIT -->
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
 # pkg-merge — behavioural specification
 
 **This document is the complete input to a clean-room reimplementation.** It

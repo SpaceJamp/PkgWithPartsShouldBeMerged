@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# pkg-merge - local bug-check gate (Windows)
+# SPDX-License-Identifier: GPL-3.0-only
+# PkgWithPartsShouldBeMerged - local bug-check gate (Windows)
 #
 # Runs the passes that can be checked locally, in order, and prints a summary.
 # Every pass that fails is reported; the script exits non-zero if any failed.
@@ -11,8 +11,7 @@
 # Pass 7 (foreign platforms) is NOT covered here - only CI can judge that.
 # See AGENTS.md.
 #
-# No license has been granted for this code - see LICENSE.md at the repository root.
-[CmdletBinding()]
+# SPDX-License-Identifier: GPL-3.0-only. See LICENSE and LICENSE.md for provenance.[CmdletBinding()]
 param(
     [string[]]$Arch = @('x64', 'Win32'),
     [switch]$SkipLarge,
@@ -110,11 +109,11 @@ foreach ($suite in $requiredHelpers.Keys) {
 }
 
 # --- Passes 4/5/6 on the primary architecture -------------------------------
-$primary = if ($Arch -contains 'x64') { 'build\x64\Release\pkg_merge.exe' } else { "build\$($Arch[0].ToLower())\Release\pkg_merge.exe" }
+$primary = if ($Arch -contains 'x64') { 'build\x64\Release\PkgWithPartsShouldBeMerged.exe' } else { "build\$($Arch[0].ToLower())\Release\PkgWithPartsShouldBeMerged.exe" }
 
 foreach ($a in $Arch) {
     $dir = if ($a -eq 'x64') { 'build\x64\Release' } else { "build\$($a.ToLower())\Release" }
-    $exe = Join-Path $root "$dir\pkg_merge.exe"
+    $exe = Join-Path $root "$dir\PkgWithPartsShouldBeMerged.exe"
     if (-not (Test-Path $exe)) {
         Add-Pass "pass 6 verify binary ($a)" $false "not built"
         continue
@@ -123,7 +122,7 @@ foreach ($a in $Arch) {
         python tools\verify_binary.py $exe 3.1.0
     }
     $null = Invoke-Check "pass 4 smoke test ($a)" $exe {
-        powershell -NoProfile -ExecutionPolicy Bypass -File tests\smoke_test.ps1 -Exe $exe -WorkRoot "$env:TEMP\pkg-merge-check-$a"
+        powershell -NoProfile -ExecutionPolicy Bypass -File tests\smoke_test.ps1 -Exe $exe -WorkRoot "$env:TEMP\PkgWithPartsShouldBeMerged-check-$a"
     }
     # Coverage must not silently shrink: 65 checks are expected on Windows.
     $reported = Get-ReportedChecks $script:LastOutput
@@ -131,7 +130,7 @@ foreach ($a in $Arch) {
 }
 
 $robustArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'tests\robustness_test.ps1',
-    '-Exe', $primary, '-WorkRoot', "$env:TEMP\pkg-merge-check-robust")
+    '-Exe', $primary, '-WorkRoot', "$env:TEMP\PkgWithPartsShouldBeMerged-check-robust")
 if ($SkipLarge) { $robustArgs += '-SkipLarge' }
 $null = Invoke-Check "pass 5 robustness test$(if ($SkipLarge) { ' (without >2 GiB)' })" $primary {
     powershell @robustArgs
@@ -151,7 +150,7 @@ foreach ($r in $results) {
 }
 Write-Host ""
 Write-Host "pass 7 (foreign platforms) is not covered here - check the CI run."
-Write-Host "https://github.com/SpaceJamp/pkg-merge/actions"
+Write-Host "https://github.com/SpaceJamp/PkgWithPartsShouldBeMerged/actions"
 Write-Host ""
 if ($failed -eq 0) {
     Write-Host "LOCAL GATE PASSED ($($results.Count) checks)" -ForegroundColor Green
