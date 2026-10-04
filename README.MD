@@ -215,8 +215,8 @@ python tools/check_all.py --watch <sha>   # wait for CI (pass 7)
 
 CI builds and tests Windows x64, Windows x86 and Linux.
 
-- `tests/smoke_test.ps1` / `tests/smoke_test.sh` — every exit path: 65 checks on
-  Windows, 54 on POSIX (the byte-comparison helper reports one check less there).
+- `tests/smoke_test.ps1` / `tests/smoke_test.sh` - every exit path: 73 checks on
+  Windows, 60 on POSIX (the byte-comparison helper reports one check less there).
 - `tests/robustness_test.ps1` — 27 checks with hostile input, up to a 2.5 GiB merge.
 - `tools/verify_binary.py` — asserts a built binary has no debug-CRT dependencies
   and carries ASLR, DEP and Control Flow Guard.

@@ -195,12 +195,16 @@ Requirements:
 
 | Code | Condition |
 | --- | --- |
-| `0` | Everything merged (or there was nothing to do and nothing failed) |
-| `1` | Nothing merged: bad arguments, unusable input, or every set failed validation |
+| `0` | Everything merged, or nothing to do because every set was skipped |
+| `1` | Nothing merged: bad arguments, unusable input, the scan found no piece sets at all, or every set failed validation |
 | `2` | Some sets merged and at least one failed |
 | `130` | Cancelled on request |
 
-A successful scan that merged nothing because everything was skipped is `0`.
+The two cases that both merge nothing are deliberately different. A scan that
+found piece sets but kept every existing output is a successful no-op and exits
+`0`. A scan that found **no piece sets at all** — an empty folder, or one whose
+pieces all sit in sub-directories when recursion was not requested — exits `1`,
+because naming the wrong folder is a usage error rather than a finished job.
 
 ## 14. Output format
 
@@ -323,8 +327,8 @@ write it down in your commit message, and move on:
 `AGENTS.md` defines an eight-stage check and this project treats it as the
 definition of done. In particular:
 
-- the reported check counts are floors, not targets: smoke **65** on Windows and
-  **54** on POSIX, robustness **27**. A drop is a coverage regression.
+- the reported check counts are floors, not targets: smoke **73** on Windows and
+  **60** on POSIX, robustness **27**. A drop is a coverage regression.
 - **Do not cut a release or a tag while any stage is red**, and do not attach
   prebuilt executables — users build their own.
 - CI is the only authority on whether the other targets build. Local x64 Windows

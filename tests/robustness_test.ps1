@@ -125,7 +125,11 @@ New-Part (Join-Path $dotted 'Game Name v1.0_0.pkg') 8192 -Magic
 New-Part (Join-Path $dotted 'Game Name v1.0_1.pkg') 8192
 $dot = Invoke-Tool @('-i', $dotted, '--overwrite', '--verify')
 Assert-True ($dot.ExitCode -eq 0) "a dotted title parses (exit $($dot.ExitCode))"
-Assert-Equal 16384 (Get-Item (Join-Path $dotted 'Game Name v1.0-merged.pkg')).Length "dotted title merged both pieces"
+# SPEC 7: the output name is the upper-case form of the title, so this is
+# GAME NAME V1.0 rather than the name as it appeared on disk. Comparing against
+# the original spelling only passed because NTFS is case-insensitive, and would
+# fail on a case-sensitive filesystem.
+Assert-Equal 16384 (Get-Item (Join-Path $dotted 'GAME NAME V1.0-merged.pkg')).Length "dotted title merged both pieces"
 
 # --- 4. a long sequence of pieces -------------------------------------------
 Write-Host "`n[4] 200 pieces in order"

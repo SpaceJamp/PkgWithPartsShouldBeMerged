@@ -274,6 +274,36 @@ Assert-Equal 1 (@(Get-ChildItem -LiteralPath $idemIn -Filter '*-merged.pkg')).Co
 # not filter on one: the directory should hold nothing but .pkg files.
 Assert-Equal 0 (@(Get-ChildItem -LiteralPath $idemIn -Recurse -File | Where-Object { $_.Extension -ne '.pkg' })).Count "no temporary files are left behind"
 
+# --- 16. numeric piece ordering (SPEC 5) --------------------------------------
+# SPEC 5 and 18.3 both single this out: ordering must be by piece number, not by
+# file name. Past piece 9 a string sort puts _10 before _2 and produces a
+# corrupt file with no error, so this needs 12 pieces AND a byte-exact
+# comparison - a length check cannot see it. Every other set here has 3 pieces or
+# fewer, where both orders agree, and the 200-piece set in the robustness suite
+# is 200 byte-identical pieces, so nothing else would catch this.
+Write-Host "`n[16] numeric ordering past piece 9"
+$ordIn = Join-Path $root "ord-in"; Reset-Dir $ordIn | Out-Null
+$ordGame = New-Game -Dir $ordIn -TitleId 'CUSA17171' -Parts 12
+$ord = Invoke-Tool @('-i', $ordIn, '--overwrite', '--verify', '--quiet')
+Assert-Equal 0 $ord.ExitCode "a 12-piece set merges"
+Assert-MergedContent -OutDir $ordIn -TitleId 'CUSA17171' -Sources $ordGame
+
+# --- 17. root piece without the PKG magic (SPEC 6.5) --------------------------
+# SPEC 6.5 is a warning only and "must never prevent a merge". Every other
+# fixture puts the magic on its root piece, so nothing here would otherwise
+# prove that a root piece lacking it still merges, unchanged.
+Write-Host "`n[17] root piece without the PKG magic"
+$noMagicIn = Join-Path $root "nomagic-in"; Reset-Dir $noMagicIn | Out-Null
+New-PartFile -Path (Join-Path $noMagicIn 'CUSA18181_0.pkg') -Bytes 2048 -Seed 31
+New-PartFile -Path (Join-Path $noMagicIn 'CUSA18181_1.pkg') -Bytes 4096 -Seed 32
+$noMagicGame = @(
+    (Join-Path $noMagicIn 'CUSA18181_0.pkg'),
+    (Join-Path $noMagicIn 'CUSA18181_1.pkg')
+)
+$noMagic = Invoke-Tool @('-i', $noMagicIn, '--overwrite', '--verify', '--quiet')
+Assert-Equal 0 $noMagic.ExitCode "a root piece without the PKG magic still merges"
+Assert-MergedContent -OutDir $noMagicIn -TitleId 'CUSA18181' -Sources $noMagicGame
+
 # --- summary ------------------------------------------------------------------
 Write-Host ""
 if ($script:Failures -eq 0) {

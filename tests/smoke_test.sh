@@ -243,6 +243,41 @@ assert_eq 1 "$count" "only one merged file exists"
 count="$(find "$idem_in" -type f ! -name '*.pkg' | wc -l | tr -d ' ')"
 assert_eq 0 "$count" "no temporary files are left behind"
 
+# --- 16. numeric ordering past piece 9 ----------------------------------------
+# SPEC 5 and 18.3: ordering is by piece number, not by file name. Past piece 9 a
+# string sort puts _10 before _2 and produces a corrupt file with no error, so
+# this needs 12 pieces and a byte-exact comparison.
+#
+# The source list is assembled in numeric order deliberately. A glob such as
+# "$ord_in"/CUSA17171_*.pkg expands lexicographically (_0 _1 _10 _11 _2 ...),
+# which is the exact order this test exists to detect, and the expected checksum
+# would then be computed from it.
+section "[16] numeric ordering past piece 9"
+ord_in="$WORK_ROOT/ord-in"; reset_dir "$ord_in"
+make_game "$ord_in" CUSA17171 12
+ord_args=""
+i=0
+while [ "$i" -lt 12 ]; do
+  ord_args="$ord_args $ord_in/CUSA17171_$i.pkg"
+  i=$((i + 1))
+done
+run_tool -i "$ord_in" --overwrite --verify --quiet
+assert_eq 0 "$EXIT_CODE" "a 12-piece set merges"
+# shellcheck disable=SC2086  # word splitting is wanted: one path per piece
+assert_merged_content "$ord_in" CUSA17171 $ord_args
+
+# --- 17. root piece without the PKG magic (SPEC 6.5) --------------------------
+# SPEC 6.5 is a warning only and must never prevent a merge. Every other fixture
+# puts the magic on its root piece.
+section "[17] root piece without the PKG magic"
+nomagic_in="$WORK_ROOT/nomagic-in"; reset_dir "$nomagic_in"
+make_part "$nomagic_in/CUSA18181_0.pkg" 2048 31
+make_part "$nomagic_in/CUSA18181_1.pkg" 4096 32
+run_tool -i "$nomagic_in" --overwrite --verify --quiet
+assert_eq 0 "$EXIT_CODE" "a root piece without the PKG magic still merges"
+assert_merged_content "$nomagic_in" CUSA18181 \
+  "$nomagic_in/CUSA18181_0.pkg" "$nomagic_in/CUSA18181_1.pkg"
+
 rm -rf "$WORK_ROOT"
 
 printf '\n'
