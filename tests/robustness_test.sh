@@ -16,12 +16,17 @@
 # SPDX-License-Identifier: GPL-3.0-only. See LICENSE for the licence text.
 set -uo pipefail
 
-EXE="${1:-./build/pkg_merge}"
 WORK_ROOT="${TMPDIR:-/tmp}/PkgWithPartsShouldBeMerged-hostile-$$"
 CHECKS=0
 FAILURES=0
 SKIPPED=0
 LARGE=1
+
+EXE="${1:-./build/pkg_merge}"
+# The executable is positional and optional; anything after it is a flag.
+if [ "$#" -gt 0 ]; then
+  shift
+fi
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
