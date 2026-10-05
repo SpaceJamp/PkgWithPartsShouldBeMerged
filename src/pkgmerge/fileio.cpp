@@ -101,12 +101,16 @@ bool open_read_handle(const std::filesystem::path& path, NativeFileHandle* handl
   return *handle != INVALID_HANDLE_VALUE;
 }
 
-std::uint64_t handle_size(const NativeFileHandle handle) {
-  LARGE_INTEGER size = {};
-  if (::GetFileSizeEx(handle, &size) == FALSE) {
-    return 0;
+// False when the size cannot be determined. Reporting 0 instead would make the
+// caller treat the file as empty (rule 6.4), which is a different problem with a
+// different fix, and would silently skip a piece that is perfectly readable.
+bool handle_size(const NativeFileHandle handle, std::uint64_t* size) {
+  LARGE_INTEGER value = {};
+  if (::GetFileSizeEx(handle, &value) == FALSE) {
+    return false;
   }
-  return static_cast<std::uint64_t>(size.QuadPart);
+  *size = static_cast<std::uint64_t>(value.QuadPart);
+  return true;
 }
 
 #else
@@ -140,7 +144,14 @@ bool InputFile::open(const std::filesystem::path& path, std::string* error) {
   }
   handle_ = handle;
   open_ = true;
-  size_ = handle_size(handle);
+  if (!handle_size(handle, &size_)) {
+    if (error != nullptr) {
+      *error = concat("cannot read the size of ", display_path(path), ": ",
+                      os_error_text(::GetLastError()));
+    }
+    close();
+    return false;
+  }
 #else
   const int descriptor = ::open(path.c_str(), O_RDONLY | O_CLOEXEC);
   if (descriptor < 0) {

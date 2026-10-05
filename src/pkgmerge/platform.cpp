@@ -18,6 +18,8 @@
 #include <shlobj.h>
 #include <shobjidl.h>
 
+#include <atomic>
+#include <chrono>
 #include <csignal>
 #include <cstring>
 #include <cwchar>
@@ -44,11 +46,17 @@ extern "C" void handle_interrupt(int /*signal_number*/) { g_interrupt = 1; }
 
 #ifdef _WIN32
 
-// Read by the console control handler, which has to be able to delete the
-// temporary file without touching anything that could deadlock. A fixed
-// buffer: no allocation happens on the cleanup path.
-constexpr std::size_t kTempPathCapacity = 512;
-wchar_t g_active_temp[kTempPathCapacity] = L"";
+// Read by the console control handler, which runs on its own thread and has to
+// delete the temporary file without allocating or blocking. Two fixed buffers
+// and one atomic index: the writer only ever fills the buffer that is not
+// currently published, so the handler always reads a complete path and never a
+// half-written one. Publication is a release store, so the write to the buffer
+// happens-before the handler's load.
+constexpr std::size_t kTempPathCapacity = 4096;
+constexpr std::size_t kTempBufferCount = 2;
+wchar_t g_active_temp[kTempBufferCount][kTempPathCapacity] = {};
+std::atomic<std::size_t> g_active_index{0};
+std::atomic<bool> g_active_temp_live{false};
 
 BOOL WINAPI console_control_handler(const DWORD control_type) {
   switch (control_type) {
@@ -60,11 +68,11 @@ BOOL WINAPI console_control_handler(const DWORD control_type) {
     case CTRL_LOGOFF_EVENT:
     case CTRL_SHUTDOWN_EVENT:
       g_interrupt = 1;
-      if (g_active_temp[0] != L'\0') {
+      if (g_active_temp_live.exchange(false)) {
+        const wchar_t* victim = g_active_temp[g_active_index.load()];
         // The window is going away. DeleteFileW is a leaf call; nothing here
         // can throw or block on a lock for long.
-        ::DeleteFileW(g_active_temp);
-        g_active_temp[0] = L'\0';
+        ::DeleteFileW(victim);
       }
       return TRUE;
     default:
@@ -127,6 +135,18 @@ bool interrupt_requested() { return g_interrupt != 0; }
 
 bool escape_pressed() {
 #ifdef _WIN32
+  // merge_set() asks once per copied block, which for a large merge is tens of
+  // thousands of console queries. Poll at a rate a person cannot perceive
+  // instead: 100ms is far below the threshold at which a keypress feels ignored,
+  // and because PeekConsoleInput does not consume the queue, anything typed
+  // between polls is still there to be seen.
+  static std::chrono::steady_clock::time_point last_poll{};
+  const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+  if (now - last_poll < std::chrono::milliseconds(100)) {
+    return false;
+  }
+  last_poll = now;
+
   const HANDLE handle = ::GetStdHandle(STD_INPUT_HANDLE);
   if (handle == nullptr || handle == INVALID_HANDLE_VALUE) {
     return false;
@@ -169,9 +189,21 @@ bool escape_pressed() {
 void set_active_temp_file(const std::filesystem::path& temp) {
 #ifdef _WIN32
   const std::wstring text = temp.wstring();
-  const std::size_t count = (text.size() < kTempPathCapacity - 1) ? text.size() : kTempPathCapacity - 1;
-  std::wmemcpy(g_active_temp, text.c_str(), count);
-  g_active_temp[count] = L'\0';
+  // Fill the buffer that is not currently published, then publish it.
+  const std::size_t target = 1U - g_active_index.load();
+  wchar_t* const buffer = g_active_temp[target];
+  if (text.size() >= kTempPathCapacity) {
+    // A truncated path is not a safe thing to hand to DeleteFileW: the short
+    // form can name a different file that does exist, and the console-close
+    // handler would delete that instead. Leaking the temporary file is the
+    // better failure.
+    g_active_temp_live.store(false);
+    return;
+  }
+  std::wmemcpy(buffer, text.c_str(), text.size());
+  buffer[text.size()] = L'\0';
+  g_active_index.store(target);
+  g_active_temp_live.store(true);
 #else
   set_active_temp_file_posix(temp);
 #endif
@@ -179,7 +211,7 @@ void set_active_temp_file(const std::filesystem::path& temp) {
 
 void clear_active_temp_file() {
 #ifdef _WIN32
-  g_active_temp[0] = L'\0';
+  g_active_temp_live.store(false);
 #endif
 }
 
