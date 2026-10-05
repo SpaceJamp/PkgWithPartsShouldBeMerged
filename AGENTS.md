@@ -125,12 +125,18 @@ is a coverage regression, not a flaky test.
 
 ### Pass 5 - robustness / hostile input
 
-`tests/robustness_test.ps1`. Hostile input: empty files, files with no `_N`
-suffix, duplicate part numbers, gaps in the sequence, non-numeric parts, absurdly
-large part numbers, dotted and spaced titles, mixed-case titles, non-ASCII paths,
-paths over 260 characters, 200 pieces, shuffled input, read-only output directory,
-locked source file, and a merge larger than 2 GiB (32-bit size overflow
-regression). Expected count today: **27 checks**.
+`tests/robustness_test.ps1` on Windows, `tests/robustness_test.sh` on POSIX.
+Hostile input: empty files, files with no `_N` suffix, duplicate part numbers,
+gaps in the sequence, non-numeric parts, absurdly large part numbers, dotted and
+spaced titles, mixed-case titles, non-ASCII paths, paths over 260 characters,
+200 pieces, shuffled input, read-only output directory, locked source file, and
+a merge larger than 2 GiB (32-bit size overflow regression). Expected count
+today: **27 checks on Windows, 24 on POSIX** (21 on POSIX with `--skip-large`).
+
+Run the POSIX one too. Permissions, `rename()` over an existing file, `O_EXCL`
+and `EINTR` all behave differently from Win32, and the program has a separate
+branch for each; a hostile case that only ever runs on Windows is not evidence
+about Linux.
 
 Every case must produce a clear diagnostic, a non-zero exit code where it should
 fail, and **no partial or temporary file left behind**.

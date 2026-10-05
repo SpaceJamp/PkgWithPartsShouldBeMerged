@@ -39,7 +39,7 @@ fi
 
 # --- Pass 3: test-harness integrity ------------------------------------------
 section "pass 3 test-harness integrity"
-for script in tests/smoke_test.sh tools/check_all.sh; do
+for script in tests/smoke_test.sh tests/robustness_test.sh tools/check_all.sh; do
   if [ ! -f "$script" ]; then
     fail "$script is missing"
   elif bash -n "$script" 2>/dev/null; then
@@ -48,7 +48,7 @@ for script in tests/smoke_test.sh tools/check_all.sh; do
     fail "$script has a syntax error"
   fi
 done
-for script in tests/smoke_test.sh tools/check_all.sh; do
+for script in tests/smoke_test.sh tests/robustness_test.sh tools/check_all.sh; do
   if [ -f "$script" ] && [ ! -x "$script" ]; then
     fail "$script is not executable (git: git update-index --chmod=+x $script)"
   fi
@@ -86,6 +86,31 @@ if [ -x "$EXE" ]; then
       pass "smoke coverage ($reported checks, expected >= 60)"
     else
       fail "smoke coverage reported '${reported:-none}', expected >= 60"
+    fi
+  fi
+else
+  fail "executable not found or not runnable: $EXE"
+fi
+
+# --- Pass 5: robustness / hostile input --------------------------------------
+section "pass 5 robustness"
+if [ -x "$EXE" ]; then
+  robust_output="$(bash tests/robustness_test.sh "$EXE" 2>&1)"
+  robust_code=$?
+  if [ "$robust_code" -ne 0 ]; then
+    printf '%s\n' "$robust_output" | grep -E '\[FAIL\]|FAIL -' || true
+    fail "robustness test (exit $robust_code)"
+    printf '       (robustness coverage not assessed: the suite failed)\n'
+  else
+    pass "robustness test"
+    # A skipped section still counts towards the total, so the floor measures
+    # intended coverage rather than what this host happened to be able to run.
+    # 24 with the >2 GiB merge, which is what this gate runs; 21 without it.
+    reported="$(printf '%s' "$robust_output" | sed -n 's/.*[^0-9]\([0-9]*\) total.*/\1/p' | tail -1)"
+    if [ -n "$reported" ] && [ "$reported" -ge 24 ]; then
+      pass "robustness coverage ($reported checks, expected >= 24)"
+    else
+      fail "robustness coverage reported '${reported:-none}', expected >= 24"
     fi
   fi
 else

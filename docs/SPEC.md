@@ -328,7 +328,8 @@ write it down in your commit message, and move on:
 definition of done. In particular:
 
 - the reported check counts are floors, not targets: smoke **73** on Windows and
-  **60** on POSIX, robustness **27**. A drop is a coverage regression.
+  **60** on POSIX, robustness **27** on Windows and **24** on POSIX. A drop is a
+  coverage regression.
 - **Do not cut a release or a tag while any stage is red**, and do not attach
   prebuilt executables — users build their own.
 - CI is the only authority on whether the other targets build. Local x64 Windows
