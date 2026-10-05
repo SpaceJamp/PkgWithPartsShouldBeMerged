@@ -319,6 +319,16 @@ run_tool --version
 if printf '%s' "$OUTPUT" | grep -qE '\([0-9a-f]{7,}\)'; then r=0; else r=1; fi
 assert_true "$r" "--version reports the commit it was built from"
 
+# SPEC 10 and 14: the summary is informational, so --quiet suppresses it. This
+# was ambiguous in the specification until it was pinned there; pin it here too.
+q_in="$WORK_ROOT/quiet-in"; reset_dir "$q_in"
+make_game "$q_in" CUSA21212 2
+run_tool -i "$q_in" --overwrite --quiet
+assert_eq 0 "$EXIT_CODE" "--quiet still merges"
+assert_eq "" "$(printf '%s' "$OUTPUT" | tr -d '[:space:]')" "--quiet prints no informational output, not even the summary"
+if [ -f "$q_in/CUSA21212-merged.pkg" ]; then r=0; else r=1; fi
+assert_true "$r" "--quiet still wrote the output"
+
 rm -rf "$WORK_ROOT"
 
 printf '\n'

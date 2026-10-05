@@ -57,6 +57,13 @@ Title identifiers are compared case-insensitively and normalised to upper case
 for output naming. `CUSA12345_0.pkg` and `cusa12345_1.pkg` therefore belong to one
 set.
 
+Case folding covers ASCII. Two identifiers that differ only in the case of a
+non-ASCII letter are therefore *different* sets, each with its own output file.
+That is a known limitation rather than a decision: on Windows the filesystem
+treats such names as equal, so both sets cannot even be created there, and on a
+case-sensitive filesystem the two output names are genuinely distinct files.
+PS4 title identifiers are ASCII in practice.
+
 ### 4.2 Ambiguous names
 
 The identifier group must be non-empty, so `_0.pkg` is not a piece file. Piece
@@ -212,7 +219,9 @@ because naming the wrong folder is a usage error rather than a finished job.
 ## 14. Output format
 
 - Human-readable lines on standard output.
-- A summary line reporting counts of merged, skipped and failed sets.
+- A summary line reporting counts of merged, skipped and failed sets. The
+  summary is informational, so `--quiet` suppresses it along with the progress
+  line; warnings and errors are never suppressed.
 - A final success line when at least one set merged and none failed.
 - Non-ASCII file names must be displayed correctly, not mangled. On Windows this
   requires reading arguments as UTF-16 and writing console output as UTF-8, and
@@ -330,8 +339,8 @@ write it down in your commit message, and move on:
 `AGENTS.md` defines an eight-stage check and this project treats it as the
 definition of done. In particular:
 
-- the reported check counts are floors, not targets: smoke **82** on Windows and
-  **69** on POSIX, robustness **27** on Windows and **26** on POSIX. A drop is a
+- the reported check counts are floors, not targets: smoke **85** on Windows and
+  **72** on POSIX, robustness **27** on Windows and **26** on POSIX. A drop is a
   coverage regression.
 - **Do not cut a release or a tag while any stage is red**, and do not attach
   prebuilt executables — users build their own.

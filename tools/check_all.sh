@@ -82,10 +82,10 @@ if [ -x "$EXE" ]; then
     if [ -z "$reported" ]; then
       reported="$(printf '%s' "$smoke_output" | sed -n 's/.*PASS - \([0-9]*\) checks succeeded.*/\1/p' | tail -1)"
     fi
-    if [ -n "$reported" ] && [ "$reported" -ge 69 ]; then
-      pass "smoke coverage ($reported checks, expected >= 69)"
+    if [ -n "$reported" ] && [ "$reported" -ge 72 ]; then
+      pass "smoke coverage ($reported checks, expected >= 72)"
     else
-      fail "smoke coverage reported '${reported:-none}', expected >= 69"
+      fail "smoke coverage reported '${reported:-none}', expected >= 72"
     fi
   fi
 else

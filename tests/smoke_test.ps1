@@ -355,6 +355,15 @@ Assert-Equal 1 $parsed.sets.Count "--json reports one entry per set"
 $ver = Invoke-Tool @('--version')
 Assert-True ($ver.Output -match '\([0-9a-f]{7,}\)') "--version reports the commit it was built from"
 
+# SPEC 10 and 14: the summary is informational, so --quiet suppresses it. This
+# was ambiguous in the specification until it was pinned there; pin it here too.
+$qIn = Join-Path $root "quiet-in"; Reset-Dir $qIn | Out-Null
+New-Game -Dir $qIn -TitleId 'CUSA21212' -Parts 2 | Out-Null
+$q = Invoke-Tool @('-i', $qIn, '--overwrite', '--quiet')
+Assert-Equal 0 $q.ExitCode "--quiet still merges"
+Assert-Equal '' $q.Output.Trim() "--quiet prints no informational output, not even the summary"
+Assert-True (Test-Path (Join-Path $qIn 'CUSA21212-merged.pkg')) "--quiet still wrote the output"
+
 # --- summary ------------------------------------------------------------------
 Write-Host ""
 if ($script:Failures -eq 0) {
