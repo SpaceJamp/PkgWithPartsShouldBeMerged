@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-// pkg-merge - Windows resources (version info + manifest).
+// PkgWithPartsShouldBeMerged - Windows resources (version info + manifest).
 //
 // The version numbers come from CMake so they can never drift from
 // project(... VERSION ...). Generated from pkg_merge.rc.in.
@@ -29,13 +29,13 @@ BEGIN
     BEGIN
         BLOCK "040904B0"
         BEGIN
-            VALUE "CompanyName",      "pkg-merge contributors\0"
+            VALUE "CompanyName",      "SpaceJamp\0"
             VALUE "FileDescription",  "Merge split PS4 PKG pieces back into a single PKG\0"
             VALUE "FileVersion",      VER_FILEVERSION_STR
             VALUE "InternalName",     "pkg_merge\0"
             VALUE "LegalCopyright",   "@PKG_MERGE_COPYRIGHT@\0"
             VALUE "OriginalFilename", "pkg_merge.exe\0"
-            VALUE "ProductName",      "pkg-merge\0"
+            VALUE "ProductName",      "PkgWithPartsShouldBeMerged\0"
             VALUE "ProductVersion",   VER_PRODUCTVERSION_STR
         END
     END

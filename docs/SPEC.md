@@ -339,8 +339,8 @@ write it down in your commit message, and move on:
 `AGENTS.md` defines an eight-stage check and this project treats it as the
 definition of done. In particular:
 
-- the reported check counts are floors, not targets: smoke **85** on Windows and
-  **72** on POSIX, robustness **27** on Windows and **26** on POSIX. A drop is a
+- the reported check counts are floors, not targets: smoke **86** on Windows and
+  **73** on POSIX, robustness **27** on Windows and **26** on POSIX. A drop is a
   coverage regression.
 - **Do not cut a release or a tag while any stage is red**, and do not attach
   prebuilt executables — users build their own.

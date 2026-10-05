@@ -318,6 +318,10 @@ assert_true "$r" "--json reports one entry per set"
 run_tool --version
 if printf '%s' "$OUTPUT" | grep -qE '\([0-9a-f]{7,}\)'; then r=0; else r=1; fi
 assert_true "$r" "--version reports the commit it was built from"
+# Spec 10 fixes the program name for the usage line; every other place that
+# names the program has to agree with it rather than inventing a second name.
+if printf '%s' "$OUTPUT" | grep -qE 'PkgWithPartsShouldBeMerged [0-9]+\.[0-9]+\.[0-9]+'; then r=0; else r=1; fi
+assert_true "$r" "--version uses the same name as the usage line"
 
 # SPEC 10 and 14: the summary is informational, so --quiet suppresses it. This
 # was ambiguous in the specification until it was pinned there; pin it here too.

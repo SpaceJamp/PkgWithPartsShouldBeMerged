@@ -18,6 +18,11 @@
 
 namespace pkgmerge {
 
+/// The name the program calls itself. Spec 10 fixes this for the usage line, so
+/// --help, --version, --json and the Windows version resource all use it rather
+/// than each inventing one.
+extern const char* const kProgramName;
+
 struct Options {
   std::filesystem::path input;
   std::filesystem::path output;

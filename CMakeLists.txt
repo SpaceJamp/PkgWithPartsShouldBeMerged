@@ -180,4 +180,4 @@ if(WIN32)
 endif()
 include(CPack)
 
-message(STATUS "pkg-merge ${PROJECT_VERSION}: ${CMAKE_BUILD_TYPE} ${CMAKE_SYSTEM_PROCESSOR}")
+message(STATUS "PkgWithPartsShouldBeMerged ${PROJECT_VERSION}: ${CMAKE_BUILD_TYPE} ${CMAKE_SYSTEM_PROCESSOR}")

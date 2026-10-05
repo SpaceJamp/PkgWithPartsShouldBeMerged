@@ -15,9 +15,10 @@
 #endif
 
 namespace pkgmerge {
-namespace {
 
-constexpr const char* kProgramName = "PkgWithPartsShouldBeMerged";
+const char* const kProgramName = "PkgWithPartsShouldBeMerged";
+
+namespace {
 
 /// An argument as lower-case ASCII, or nothing when it is not plain ASCII. A
 /// non-ASCII argument can therefore never be mistaken for an option, which
@@ -109,7 +110,7 @@ std::string usage_text() {
 std::string version_number() { return std::string(PKG_MERGE_VERSION); }
 
 std::string version_text() {
-  return concat("pkg-merge ", PKG_MERGE_VERSION, " (", PKG_MERGE_GIT, ")\n",
+  return concat(kProgramName, " ", PKG_MERGE_VERSION, " (", PKG_MERGE_GIT, ")\n",
                 "Merges split PS4 PKG pieces back into a single PKG.\n");
 }
 

@@ -64,7 +64,7 @@ std::string render_json(const Options& options, const std::filesystem::path& inp
                         const std::size_t skipped, const std::size_t failed,
                         const int exit_code) {
   std::string out = "{\n";
-  out += concat("  \"tool\": ", json_string("pkg-merge"), ",\n");
+  out += concat("  \"tool\": ", json_string(kProgramName), ",\n");
   out += concat("  \"version\": ", json_string(version_number()), ",\n");
   out += concat("  \"input\": ", json_string(display_path(input)), ",\n");
   out += concat("  \"output\": ", json_string(display_path(output)), ",\n");

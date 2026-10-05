@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-only
-"""Wait for the newest pkg-merge Actions run and report every job (pass 7).
+"""Wait for the newest PkgWithPartsShouldBeMerged Actions run and report every
+job (pass 7).
 
 Local passes say nothing about whether the code builds on Linux, macOS or a
 different architecture, so this is the only way to close pass 7 from AGENTS.md.

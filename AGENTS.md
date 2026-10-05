@@ -119,7 +119,7 @@ A green suite that cannot fail proves nothing. Before accepting pass 4/5 output:
 `tests/smoke_test.ps1` (Windows) / `tests/smoke_test.sh` (POSIX). Every exit code
 path must be exercised: success, usage error, validation error, I/O error,
 cancellation, overwrite and no-clobber, dry run, recursive, non-ASCII paths.
-Expected count today: **85 checks on Windows, 72 on POSIX** (the byte-comparison
+Expected count today: **86 checks on Windows, 73 on POSIX** (the byte-comparison
 helper contributes one check less in the shell version). A drop in either number
 is a coverage regression, not a flaky test.
 

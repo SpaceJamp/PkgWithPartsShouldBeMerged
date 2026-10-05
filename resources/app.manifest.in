@@ -3,7 +3,7 @@
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
   <assemblyIdentity
       type="win32"
-      name="pkg-merge"
+      name="PkgWithPartsShouldBeMerged"
       version="@PROJECT_VERSION@.0"
       processorArchitecture="*"/>
   <description>Merge split PS4 PKG pieces back into a single PKG</description>
