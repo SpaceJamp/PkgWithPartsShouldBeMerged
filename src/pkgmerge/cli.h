@@ -26,10 +26,17 @@ struct Options {
   bool recursive = false;
   bool overwrite = false;
   bool no_clobber = false;
-  bool verify = false;
+  // Verification is on unless --no-verify is given. This tool exists because a
+  // silently corrupt output is the failure worth fearing, and the check costs
+  // one extra read pass over what was just written.
+  bool verify = true;
   bool dry_run = false;
   bool quiet = false;
   bool no_pause = false;
+  // Move an existing output aside instead of destroying it when replacing.
+  bool backup = false;
+  // Emit the result as JSON on stdout instead of prose.
+  bool json = false;
 };
 
 enum class ParseStatus {
@@ -50,6 +57,8 @@ ParseResult parse_arguments(const std::vector<OsString>& arguments);
 
 std::string usage_text();
 std::string version_text();
+/// Just the version number, e.g. "1.1.0", for structured output.
+std::string version_number();
 
 }  // namespace pkgmerge
 

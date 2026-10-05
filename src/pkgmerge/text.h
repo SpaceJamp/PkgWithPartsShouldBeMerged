@@ -74,6 +74,11 @@ std::string concat(Parts&&... parts) {
 /// Removes leading and trailing ASCII whitespace.
 std::string_view trim_ascii(std::string_view text);
 
+/// Quotes a UTF-8 string as a JSON string literal, including the surrounding
+/// quotes. Bytes outside ASCII are passed through unchanged, which is correct:
+/// JSON is defined over UTF-8 and needs no escaping for them.
+std::string json_string(std::string_view utf8);
+
 }  // namespace pkgmerge
 
 #endif  // PKG_MERGE_TEXT_H

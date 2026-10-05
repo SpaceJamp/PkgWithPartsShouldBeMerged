@@ -30,10 +30,12 @@ rules.ninja
 *.exp
 *.manifest
 *.res
-# The temporary file the merge writes before renaming it into place. SPEC 18.2
-# leaves that name to the implementation, so keep this in step with
-# temporary_path_for() in src/pkgmerge/merge.cpp.
+# The temporary file the merge writes before renaming it into place, and the
+# copy --backup keeps of a replaced output. SPEC 18.2 leaves those names to the
+# implementation, so keep these in step with temporary_path_for() and
+# backup_existing() in src/pkgmerge/merge.cpp.
 *.pkgmerge-tmp
+*.pkgmerge-bak
 *-merged.pkg
 
 # Editors / IDEs

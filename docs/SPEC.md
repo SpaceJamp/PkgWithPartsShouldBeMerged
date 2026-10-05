@@ -148,7 +148,10 @@ PkgWithPartsShouldBeMerged [OPTIONS] [INPUT_DIR [OUTPUT_DIR]]
 | `-r`, `--recursive` | Include sub-directories in the scan. |
 | `-f`, `--overwrite` | Overwrite existing output without asking. |
 | `--no-clobber` | Never overwrite; skip existing output. |
-| `--verify` | After merging, re-read the output and compare it byte for byte against the sources. |
+| `--backup` | When replacing an existing output, move it aside first instead of destroying it. |
+| `--verify` | Re-read the output and compare it byte for byte against the sources. **On by default**; `--no-verify` skips the extra read pass. |
+| `--no-verify` | Do not re-read and compare the result. |
+| `--json` | Print the result as a single JSON object on standard output, and nothing else on that stream, so it can be parsed directly. |
 | `-n`, `--dry-run` | Report what would be merged; write nothing. |
 | `-q`, `--quiet` | Suppress progress and informational output; keep warnings and errors. |
 | `--no-pause` | Do not wait for a key press before exiting. |
@@ -327,8 +330,8 @@ write it down in your commit message, and move on:
 `AGENTS.md` defines an eight-stage check and this project treats it as the
 definition of done. In particular:
 
-- the reported check counts are floors, not targets: smoke **73** on Windows and
-  **60** on POSIX, robustness **27** on Windows and **26** on POSIX. A drop is a
+- the reported check counts are floors, not targets: smoke **82** on Windows and
+  **69** on POSIX, robustness **27** on Windows and **26** on POSIX. A drop is a
   coverage regression.
 - **Do not cut a release or a tag while any stage is red**, and do not attach
   prebuilt executables — users build their own.

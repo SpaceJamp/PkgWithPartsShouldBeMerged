@@ -119,7 +119,7 @@ A green suite that cannot fail proves nothing. Before accepting pass 4/5 output:
 `tests/smoke_test.ps1` (Windows) / `tests/smoke_test.sh` (POSIX). Every exit code
 path must be exercised: success, usage error, validation error, I/O error,
 cancellation, overwrite and no-clobber, dry run, recursive, non-ASCII paths.
-Expected count today: **73 checks on Windows, 60 on POSIX** (the byte-comparison
+Expected count today: **82 checks on Windows, 69 on POSIX** (the byte-comparison
 helper contributes one check less in the shell version). A drop in either number
 is a coverage regression, not a flaky test.
 
@@ -144,8 +144,8 @@ fail, and **no partial or temporary file left behind**.
 ### Pass 6 - packaging
 
 ```bat
-python tools\verify_binary.py build\x64\Release\pkg_merge.exe 1.0.0
-python tools\verify_binary.py build\x86\Release\pkg_merge.exe 1.0.0
+python tools\verify_binary.py build\x64\Release\pkg_merge.exe 1.1.0
+python tools\verify_binary.py build\x86\Release\pkg_merge.exe 1.1.0
 ```
 
 Asserts: no debug-CRT imports, `DYNAMICBASE | NXCOMPAT | GUARD_CF`, plus

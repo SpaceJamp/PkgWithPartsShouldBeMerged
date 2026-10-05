@@ -21,7 +21,7 @@ if(NOT DEFINED CACHE{CMAKE_BUILD_TYPE})
 endif()
 
 project(pkg_merge
-        VERSION 1.0.0
+        VERSION 1.1.0
         DESCRIPTION "Merge split PS4 PKG pieces back into a single PKG"
         LANGUAGES CXX)
 
@@ -73,6 +73,20 @@ add_executable(pkg_merge ${PKG_MERGE_SOURCES})
 
 target_compile_features(pkg_merge PRIVATE cxx_std_20)
 target_compile_definitions(pkg_merge PRIVATE PKG_MERGE_VERSION="${PROJECT_VERSION}")
+
+# The commit the binary was built from, reported by --version so a bug report
+# names the code that was actually running. Silently "unknown" when git is not
+# there or this is not a checkout: a tarball build must still work.
+execute_process(COMMAND git rev-parse --short HEAD
+                WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+                OUTPUT_VARIABLE PKG_MERGE_GIT
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                ERROR_QUIET
+                RESULT_VARIABLE PKG_MERGE_GIT_FOUND)
+if(NOT PKG_MERGE_GIT_FOUND EQUAL 0 OR NOT PKG_MERGE_GIT)
+  set(PKG_MERGE_GIT "unknown")
+endif()
+target_compile_definitions(pkg_merge PRIVATE PKG_MERGE_GIT="${PKG_MERGE_GIT}")
 # The repository root keeps "docs/SPEC.md"-style paths addressable; src is what
 # makes #include "pkgmerge/..." resolve from inside the tree.
 target_include_directories(pkg_merge PRIVATE

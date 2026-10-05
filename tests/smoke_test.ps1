@@ -322,6 +322,39 @@ $noMagic = Invoke-Tool @('-i', $noMagicIn, '--overwrite', '--verify', '--quiet')
 Assert-Equal 0 $noMagic.ExitCode "a root piece without the PKG magic still merges"
 Assert-MergedContent -OutDir $noMagicIn -TitleId 'CUSA18181' -Sources $noMagicGame
 
+# --- 18. backup, JSON output and build metadata ------------------------------
+Write-Host "`n[18] backup, JSON and version metadata"
+$bkIn = Join-Path $root "backup-in"; Reset-Dir $bkIn | Out-Null
+New-Game -Dir $bkIn -TitleId 'CUSA19191' -Parts 2 | Out-Null
+Invoke-Tool @('-i', $bkIn, '--overwrite') | Out-Null
+$bkMerged = Join-Path $bkIn 'CUSA19191-merged.pkg'
+$bkFirst = (Get-FileHash $bkMerged -Algorithm SHA256).Hash
+# Different bytes, so the re-merge cannot produce the same output by accident.
+New-PartFile -Path (Join-Path $bkIn 'CUSA19191_1.pkg') -Bytes 40000 -Seed 41
+$bk = Invoke-Tool @('-i', $bkIn, '--overwrite', '--backup')
+Assert-Equal 0 $bk.ExitCode "a merge with --backup succeeds"
+$bkKept = @(Get-ChildItem -LiteralPath $bkIn -File |
+    Where-Object { $_.Name -ne 'CUSA19191-merged.pkg' -and $_.Name -like 'CUSA19191-merged.pkg*' })
+Assert-Equal 1 $bkKept.Count "--backup kept exactly one copy of the previous output"
+Assert-Equal $bkFirst (Get-FileHash $bkKept[0].FullName -Algorithm SHA256).Hash "the kept copy is the previous output, byte for byte"
+Assert-Equal $false ((Get-FileHash $bkMerged -Algorithm SHA256).Hash -eq $bkFirst) "the new output really did replace it"
+
+# --json has to be the only thing on stdout, or a caller cannot parse it. The
+# fixture has the container marker on its root piece, so there is no warning to
+# interleave either.
+$jsIn = Join-Path $root "json-in"; Reset-Dir $jsIn | Out-Null
+New-Game -Dir $jsIn -TitleId 'CUSA20202' -Parts 2 | Out-Null
+$js = Invoke-Tool @('-i', $jsIn, '--overwrite', '--json')
+Assert-Equal 0 $js.ExitCode "a --json run succeeds"
+$parsed = $null
+try { $parsed = $js.Output | ConvertFrom-Json } catch { $parsed = $null }
+Assert-True ($null -ne $parsed) "--json emits parseable JSON and nothing else"
+Assert-Equal 1 $parsed.counts.merged "--json reports the merged count"
+Assert-Equal 1 $parsed.sets.Count "--json reports one entry per set"
+
+$ver = Invoke-Tool @('--version')
+Assert-True ($ver.Output -match '\([0-9a-f]{7,}\)') "--version reports the commit it was built from"
+
 # --- summary ------------------------------------------------------------------
 Write-Host ""
 if ($script:Failures -eq 0) {

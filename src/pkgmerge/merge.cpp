@@ -60,13 +60,21 @@ bool has_container_magic(const Piece& piece) {
 }
 
 std::string progress_line(const PieceSet& set, const std::uint64_t done,
-                          const std::uint64_t total, const double seconds) {
+                          const std::uint64_t total, const double seconds,
+                          const std::size_t set_index, const std::size_t set_count) {
   const double done_value = static_cast<double>(done);
   const double total_value = static_cast<double>(total);
   const double percent = total > 0U ? (100.0 * done_value / total_value) : 100.0;
   const double rate = seconds > 0.0 ? done_value / seconds : 0.0;
 
-  std::string line = concat("  ", set.title_id, "  ");
+  // Progress is for the whole scan, not for this set: the count of sets and the
+  // running byte total both describe everything found, so one line answers "how
+  // far along is this folder" rather than "how far along is this one title".
+  std::string line;
+  if (set_count > 1U) {
+    line += concat("  [", set_index + 1U, "/", set_count, "] ");
+  }
+  line += concat(set.title_id, "  ");
   if (percent < 10.0) {
     line += ' ';
   }
@@ -87,9 +95,17 @@ std::string progress_line(const PieceSet& set, const std::uint64_t done,
 /// (spec section 11).
 class Progress {
  public:
-  Progress(const bool enabled, const PieceSet& set, const std::uint64_t total)
-      : enabled_(enabled), set_(set), total_(total) {}
+  Progress(const bool enabled, const PieceSet& set, const std::uint64_t base,
+           const std::uint64_t total, const std::size_t set_index,
+           const std::size_t set_count)
+      : enabled_(enabled),
+        set_(set),
+        base_(base),
+        total_(total),
+        set_index_(set_index),
+        set_count_(set_count) {}
 
+  /// `done` is the bytes this set has written; the line reports the scan total.
   void advance(const std::uint64_t done, const bool force) {
     if (!enabled_) {
       return;
@@ -105,14 +121,18 @@ class Progress {
     }
     const double seconds =
         std::chrono::duration<double>(now - started_).count();
-    term::progress_update(progress_line(set_, done, total_, seconds));
+    term::progress_update(
+        progress_line(set_, base_ + done, total_, seconds, set_index_, set_count_));
   }
 
-  void finish() {
+  /// Ends the line at what this set actually wrote. Passing the scan total here
+  /// would claim 100% after the first of several sets, which is what the line
+  /// used to do.
+  void finish(const std::uint64_t written) {
     if (!enabled_) {
       return;
     }
-    advance(total_, true);
+    advance(written, true);
     term::progress_end();
   }
 
@@ -127,7 +147,10 @@ class Progress {
  private:
   bool enabled_ = false;
   const PieceSet& set_;
+  std::uint64_t base_ = 0;
   std::uint64_t total_ = 0;
+  std::size_t set_index_ = 0;
+  std::size_t set_count_ = 0;
   std::chrono::steady_clock::time_point started_ = std::chrono::steady_clock::now();
   std::chrono::steady_clock::time_point last_ = std::chrono::steady_clock::now();
   bool begun_ = false;
@@ -166,6 +189,31 @@ bool create_temporary(TempFile* temporary, const std::filesystem::path& output,
   *error = first_failure.empty()
                ? concat("cannot create a temporary file next to ", display_path(output))
                : first_failure;
+  return false;
+}
+
+/// Moves an existing output aside rather than destroying it. The name is never
+/// one that already exists, so nothing is overwritten on the way out either.
+bool backup_existing(const std::filesystem::path& output, std::filesystem::path* kept,
+                     std::string* error) {
+  for (unsigned attempt = 0; attempt < 64U; ++attempt) {
+    std::string name = path_to_utf8(output.filename());
+    name += ".pkgmerge-bak";
+    if (attempt > 0U) {
+      name += concat("-", attempt);
+    }
+    const std::filesystem::path candidate = output.parent_path() / path_from_utf8(name);
+    std::error_code ec;
+    if (std::filesystem::exists(candidate, ec)) {
+      continue;
+    }
+    if (replace_file(output, candidate, error)) {
+      *kept = candidate;
+      return true;
+    }
+    return false;
+  }
+  *error = concat("cannot find a free name to keep ", display_path(output), " under");
   return false;
 }
 
@@ -436,7 +484,8 @@ MergeOutcome merge_set(const PieceSet& set, const MergeRequest& request) {
     outcome.note = why;
   };
 
-  Progress progress(!request.quiet, set, expected_total);
+  Progress progress(!request.quiet, set, request.progress_base, request.progress_total,
+                    request.set_index, request.set_count);
   std::vector<char> buffer(kCopyBlockSize);
   std::uint64_t total_copied = 0;      // across the whole merge
   std::uint64_t sizes_at_open = 0;     // what the pieces claimed when opened
@@ -575,10 +624,38 @@ MergeOutcome merge_set(const PieceSet& set, const MergeRequest& request) {
   }
 
   // Everything that could still reject the result has now passed, so the merge is
-  // genuinely finished and the progress line may say so.
-  progress.finish();
+  // genuinely finished and the progress line may say so. `total_copied` is this
+  // set's own bytes; Progress adds what earlier sets wrote to reach the scan
+  // total.
+  progress.finish(total_copied);
+
+  // Move the old output aside before publishing, not after: once the new file is
+  // in place the old one is gone, and there would be nothing left to move. If the
+  // publish then fails, put it back, so a failed merge leaves the directory
+  // exactly as it found it.
+  std::filesystem::path kept;
+  if (request.backup && !request.dry_run) {
+    std::error_code ec;
+    if (std::filesystem::exists(outcome.output, ec)) {
+      std::string move_error;
+      if (!backup_existing(outcome.output, &kept, &move_error)) {
+        temporary.discard();
+        platform::clear_active_temp_file();
+        return failed(concat(move_error, "; nothing was replaced"));
+      }
+    }
+  }
 
   if (!replace_file(temporary.path(), outcome.output, &error)) {
+    if (!kept.empty()) {
+      // Put the original back. Its own failure is worth saying, but the rename
+      // failure is the one the user needs to know about.
+      std::string restore_error;
+      if (!replace_file(kept, outcome.output, &restore_error)) {
+        error = concat(error, "; and the previous ", display_path(kept),
+                       " could not be put back: ", restore_error);
+      }
+    }
     temporary.discard();
     platform::clear_active_temp_file();
     return failed(error);
@@ -587,6 +664,7 @@ MergeOutcome merge_set(const PieceSet& set, const MergeRequest& request) {
 
   outcome.status = MergeStatus::kMerged;
   outcome.bytes = measured;
+  outcome.backup = kept;
   outcome.note.clear();
   return outcome;
 }

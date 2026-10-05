@@ -285,6 +285,40 @@ assert_eq 0 "$EXIT_CODE" "a root piece without the PKG magic still merges"
 assert_merged_content "$nomagic_in" CUSA18181 \
   "$nomagic_in/CUSA18181_0.pkg" "$nomagic_in/CUSA18181_1.pkg"
 
+# --- 18. backup, JSON output and build metadata -------------------------------
+section "[18] backup, JSON and version metadata"
+bk_in="$WORK_ROOT/backup-in"; reset_dir "$bk_in"
+make_game "$bk_in" CUSA19191 2
+run_tool -i "$bk_in" --overwrite
+bk_merged="$bk_in/CUSA19191-merged.pkg"
+bk_first="$(cksum < "$bk_merged")"
+# Different bytes, so the re-merge cannot produce the same output by accident.
+make_part "$bk_in/CUSA19191_1.pkg" 40000 41
+run_tool -i "$bk_in" --overwrite --backup
+assert_eq 0 "$EXIT_CODE" "a merge with --backup succeeds"
+kept="$(find "$bk_in" -maxdepth 1 -name 'CUSA19191-merged.pkg*' ! -name 'CUSA19191-merged.pkg' | wc -l | tr -d ' ')"
+assert_eq 1 "$kept" "--backup kept exactly one copy of the previous output"
+assert_eq "$bk_first" "$(cksum < "$(find "$bk_in" -maxdepth 1 -name 'CUSA19191-merged.pkg*' ! -name 'CUSA19191-merged.pkg' | head -1)")" "the kept copy is the previous output, byte for byte"
+if [ "$(cksum < "$bk_merged")" = "$bk_first" ]; then r=1; else r=0; fi
+assert_true "$r" "the new output really did replace it"
+
+# --json has to be the only thing on stdout, or a caller cannot parse it. There
+# is no JSON parser guaranteed here, so check the shape structurally.
+js_in="$WORK_ROOT/json-in"; reset_dir "$js_in"
+make_game "$js_in" CUSA20202 2
+run_tool -i "$js_in" --overwrite --json
+assert_eq 0 "$EXIT_CODE" "a --json run succeeds"
+case "$OUTPUT" in '{'*) r=0;; *) r=1;; esac
+assert_true "$r" "--json output begins with an object"
+if printf '%s' "$OUTPUT" | tr -d ' \n\t' | grep -q '"counts":{"merged":1,"skipped":0,"failed":0}'; then r=0; else r=1; fi
+assert_true "$r" "--json reports the merged, skipped and failed counts"
+if [ "$(printf '%s' "$OUTPUT" | grep -c '"titleId"')" -eq 1 ]; then r=0; else r=1; fi
+assert_true "$r" "--json reports one entry per set"
+
+run_tool --version
+if printf '%s' "$OUTPUT" | grep -qE '\([0-9a-f]{7,}\)'; then r=0; else r=1; fi
+assert_true "$r" "--version reports the commit it was built from"
+
 rm -rf "$WORK_ROOT"
 
 printf '\n'

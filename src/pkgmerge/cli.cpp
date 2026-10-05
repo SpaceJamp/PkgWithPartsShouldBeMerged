@@ -8,6 +8,12 @@
 #define PKG_MERGE_VERSION "0.0.0"
 #endif
 
+// The commit this was built from, so a bug report says which code was running.
+// CMake leaves this as "unknown" when git is not available at configure time.
+#ifndef PKG_MERGE_GIT
+#define PKG_MERGE_GIT "unknown"
+#endif
+
 namespace pkgmerge {
 namespace {
 
@@ -47,8 +53,9 @@ ParseResult success(const ParseStatus status) {
 /// that adding one cannot silently leave it out of this list.
 bool is_flag(const std::string& name) {
   return name == "-r" || name == "--recursive" || name == "-f" || name == "--overwrite" ||
-         name == "--no-clobber" || name == "--verify" || name == "-n" || name == "--dry-run" ||
-         name == "-q" || name == "--quiet" || name == "--no-pause" || name == "-h" ||
+         name == "--no-clobber" || name == "--verify" || name == "--no-verify" ||
+         name == "-n" || name == "--dry-run" || name == "-q" || name == "--quiet" ||
+         name == "--no-pause" || name == "--backup" || name == "--json" || name == "-h" ||
          name == "--help" || name == "-v" || name == "--version";
 }
 
@@ -80,10 +87,15 @@ std::string usage_text() {
                 "  -f, --overwrite    Replace an existing output file without asking.\n",
                 "      --no-clobber   Never replace an existing output file; skip those\n",
                 "                     sets and report the skip.\n",
+                "      --backup       When replacing, move the previous output aside\n",
+                "                     instead of destroying it.\n",
                 "      --verify       Re-read the merged result and compare it with the\n",
-                "                     sources, byte for byte.\n",
+                "                     sources, byte for byte. This is the default;\n",
+                "                     --no-verify skips the extra read pass.\n",
+                "      --no-verify    Do not re-read and compare the result.\n",
                 "  -n, --dry-run      Report what would be merged; write nothing.\n",
                 "  -q, --quiet        Print only warnings and errors.\n",
+                "      --json         Print the result as JSON on standard output.\n",
                 "      --no-pause     Do not wait for a key press before exiting.\n",
                 "  -h, --help         Print this text and exit.\n",
                 "  -v, --version      Print the version and exit.\n",
@@ -94,8 +106,10 @@ std::string usage_text() {
                 "option parsing.\n");
 }
 
+std::string version_number() { return std::string(PKG_MERGE_VERSION); }
+
 std::string version_text() {
-  return concat("pkg-merge ", PKG_MERGE_VERSION, "\n",
+  return concat("pkg-merge ", PKG_MERGE_VERSION, " (", PKG_MERGE_GIT, ")\n",
                 "Merges split PS4 PKG pieces back into a single PKG.\n");
 }
 
@@ -148,6 +162,12 @@ ParseResult parse_arguments(const std::vector<OsString>& arguments) {
         options.no_clobber = true;
       } else if (flag == "--verify") {
         options.verify = true;
+      } else if (flag == "--no-verify") {
+        options.verify = false;
+      } else if (flag == "--backup") {
+        options.backup = true;
+      } else if (flag == "--json") {
+        options.json = true;
       } else if (flag == "-n" || flag == "--dry-run") {
         options.dry_run = true;
       } else if (flag == "-q" || flag == "--quiet") {

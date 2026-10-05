@@ -52,9 +52,20 @@ struct MergeRequest {
   std::filesystem::path output_directory;
   bool overwrite = false;
   bool no_clobber = false;
-  bool verify = false;
+  bool verify = true;
   bool dry_run = false;
   bool quiet = false;
+  // Move an existing output aside before replacing it. Without this, --overwrite
+  // is the one remaining way to lose a file that was not the user's own
+  // mistake to make.
+  bool backup = false;
+  // Progress is reported across the whole scan, not per set: `progress_base` is
+  // what earlier sets already wrote and `progress_total` is every valid set in
+  // the scan, so one line can show overall progress (spec section 11).
+  std::uint64_t progress_base = 0;
+  std::uint64_t progress_total = 0;
+  std::size_t set_index = 0;   // 0-based
+  std::size_t set_count = 0;
 };
 
 struct MergeOutcome {
@@ -62,6 +73,7 @@ struct MergeOutcome {
   std::string note;
   std::uint64_t bytes = 0;
   std::filesystem::path output;
+  std::filesystem::path backup;   // set when an existing output was moved aside
 };
 
 /// `<output directory>/<TITLE_ID>-merged.pkg` (spec section 7).

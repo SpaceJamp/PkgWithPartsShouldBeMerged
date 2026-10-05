@@ -129,6 +129,37 @@ std::string format_duration(double seconds) {
 
 std::string format_count(std::uint64_t n) { return concat(n); }
 
+std::string json_string(std::string_view utf8) {
+  std::string out;
+  out.reserve(utf8.size() + 2U);
+  out += '"';
+  for (const char c : utf8) {
+    const unsigned char byte = static_cast<unsigned char>(c);
+    switch (c) {
+      case '"':  out += "\\\""; break;
+      case '\\': out += "\\\\"; break;
+      case '\b': out += "\\b"; break;
+      case '\f': out += "\\f"; break;
+      case '\n': out += "\\n"; break;
+      case '\r': out += "\\r"; break;
+      case '\t': out += "\\t"; break;
+      default:
+        if (byte < 0x20U) {
+          // The other C0 controls have no short form and must be \u-escaped.
+          static const char* kHex = "0123456789abcdef";
+          out += "\\u00";
+          out += kHex[(byte >> 4U) & 0x0FU];
+          out += kHex[byte & 0x0FU];
+        } else {
+          out += c;
+        }
+        break;
+    }
+  }
+  out += '"';
+  return out;
+}
+
 std::string_view trim_ascii(std::string_view text) {
   std::size_t first = 0;
   while (first < text.size() && (text[first] == ' ' || text[first] == '\t')) {

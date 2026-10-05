@@ -69,12 +69,15 @@ PkgWithPartsShouldBeMerged [OPTIONS] [INPUT_DIR [OUTPUT_DIR]]
 | `-r`, `--recursive` | Also scan sub folders. |
 | `-f`, `--overwrite` | Replace an existing merged file without asking. |
 | `--no-clobber` | Never replace; skip existing merged files. |
-| `--verify` | Re-read the finished file and compare it byte for byte against the sources. |
+| `--backup` | Move the previous merged file aside instead of destroying it. |
+| `--verify` | Re-read the finished file and compare it byte for byte against the sources. **On by default.** |
+| `--no-verify` | Skip that extra read pass. |
 | `-n`, `--dry-run` | Report what would be merged, write nothing. |
 | `-q`, `--quiet` | Only print warnings and errors. |
+| `--json` | Print the result as a single JSON object on standard output, and nothing else there. |
 | `--no-pause` | Do not wait for a key press when the program was double-clicked. |
 | `-h`, `--help` | Show the built-in help. |
-| `-v`, `--version` | Show the version. |
+| `-v`, `--version` | Show the version and the commit it was built from. |
 
 Both the flags and plain positional arguments work, so drag & drop keeps
 working:
@@ -126,6 +129,8 @@ tool produced earlier, are ignored.
   size check passes, so an interrupted run never publishes a partial file.
 - An existing `-merged.pkg` is only replaced after asking (`--overwrite` to skip
   the question, `--no-clobber` to never replace).
+- `--backup` moves the previous file aside rather than destroying it, so a
+  replacement is recoverable.
 - Merges larger than 4 GiB work on the 32-bit build too: nothing is mapped
   whole, and sizes are computed in 64-bit arithmetic.
 
@@ -197,7 +202,7 @@ The repository carries the tools that check a build, and they are the same ones
 CI runs:
 
 ```bat
-python tools\verify_binary.py build\Release\pkg_merge.exe 1.0.0
+python tools\verify_binary.py build\Release\pkg_merge.exe 1.1.0
 ```
 
 This asserts the binary has no debug-CRT dependency and carries ASLR, DEP and
@@ -259,8 +264,8 @@ python tools/check_all.py --watch <sha>   # wait for CI (pass 7)
 
 CI builds and tests Windows x64, Windows x86 and Linux.
 
-- `tests/smoke_test.ps1` / `tests/smoke_test.sh` - every exit path: 73 checks on
-  Windows, 60 on POSIX (the byte-comparison helper reports one check less there).
+- `tests/smoke_test.ps1` / `tests/smoke_test.sh` - every exit path: 82 checks on
+  Windows, 69 on POSIX (the byte-comparison helper reports one check less there).
 - `tests/robustness_test.ps1` / `tests/robustness_test.sh` - 27 checks on
   Windows, 26 on POSIX, with hostile input and a merge up to 2.5 GiB.
 - `tools/verify_binary.py` — asserts a built binary has no debug-CRT dependencies

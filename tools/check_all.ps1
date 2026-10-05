@@ -128,7 +128,7 @@ foreach ($a in $Arch) {
         continue
     }
     $null = Invoke-Check "pass 6 verify binary ($a)" $exe {
-        python tools\verify_binary.py $exe 1.0.0
+        python tools\verify_binary.py $exe 1.1.0
     }
     $smokeCode = Invoke-Check "pass 4 smoke test ($a)" $exe {
         powershell -NoProfile -ExecutionPolicy Bypass -File tests\smoke_test.ps1 -Exe $exe -WorkRoot "$env:TEMP\PkgWithPartsShouldBeMerged-check-$a"
@@ -139,7 +139,7 @@ foreach ($a in $Arch) {
     # count that says nothing about coverage.
     if ($smokeCode -eq 0) {
         $reported = Get-ReportedChecks $script:LastOutput
-        Add-Pass "pass 4 smoke coverage ($a)" ($reported -ge 73) "reported $reported, expected >= 73"
+        Add-Pass "pass 4 smoke coverage ($a)" ($reported -ge 82) "reported $reported, expected >= 82"
     } else {
         Write-Host "[skip] pass 4 smoke coverage ($a): suite failed, count not comparable" -ForegroundColor Yellow
     }
