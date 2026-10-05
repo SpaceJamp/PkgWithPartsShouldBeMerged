@@ -222,9 +222,8 @@ all before reporting. When a fix lands, say explicitly which passes were re-run.
   on x64, which is a poor trade for locking users out. Do not drop it unless the
   user asks.
 - **Ship and test Windows x64, Windows x86 and Linux x64.** macOS is **not** a
-  target: the user dropped it when the rewrite was scoped, trading the audience
-  that aldo-o's `v3.0b` had added for a smaller surface and no AppKit path to
-  maintain. Do not add it back without the user asking.
+  target: the user dropped it when the rewrite was scoped, for a smaller surface
+  and no AppKit path to maintain. Do not add it back without the user asking.
 - **Link no third-party code.** Windows uses `IFileDialog`; Linux locates
   `zenity` or `kdialog` at run time. `libs/nativefiledialog-extended` was removed
   and its CMake options deleted. Do not reintroduce a bundled dependency, and do
