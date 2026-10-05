@@ -105,12 +105,12 @@ if [ -x "$EXE" ]; then
     pass "robustness test"
     # A skipped section still counts towards the total, so the floor measures
     # intended coverage rather than what this host happened to be able to run.
-    # 24 with the >2 GiB merge, which is what this gate runs; 21 without it.
+    # 26 with the >2 GiB merge, which is what this gate runs; 23 without it.
     reported="$(printf '%s' "$robust_output" | sed -n 's/.*[^0-9]\([0-9]*\) total.*/\1/p' | tail -1)"
-    if [ -n "$reported" ] && [ "$reported" -ge 24 ]; then
-      pass "robustness coverage ($reported checks, expected >= 24)"
+    if [ -n "$reported" ] && [ "$reported" -ge 26 ]; then
+      pass "robustness coverage ($reported checks, expected >= 26)"
     else
-      fail "robustness coverage reported '${reported:-none}', expected >= 24"
+      fail "robustness coverage reported '${reported:-none}', expected >= 26"
     fi
   fi
 else

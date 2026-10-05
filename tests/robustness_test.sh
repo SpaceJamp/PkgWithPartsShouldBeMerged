@@ -206,17 +206,25 @@ fi
 assert_no_leftovers "$lock_in" "unreadable source file" "$snap"
 
 # --- 8. an unlistable sub-directory -----------------------------------------
-section "[8] unlistable sub-directory"
+section "[8] an unlistable sub-directory"
 hidden="$WORK_ROOT/hidden"; reset_dir "$hidden"
-sub="$hidden/sub"; mkdir -p "$sub"
-make_part "$sub/CUSA00008_0.pkg" 4096 1 magic
-make_part "$sub/CUSA00008_1.pkg" 4096 2
-snap=$(snapshot "$hidden")
+# A complete, readable set beside the unreadable directory. If the scan aborted
+# on the unreadable one instead of skipping it, this would never merge - which is
+# what SPEC 12 actually asks for. An earlier version of this case put the only
+# set inside the unreadable directory and asserted exit 0, which tested nothing:
+# finding no pieces at all is exit 1, and that is correct.
+make_part "$hidden/CUSA00008_0.pkg" 4096 1 magic
+make_part "$hidden/CUSA00008_1.pkg" 4096 2
+sub="$hidden/unreadable-subdir"; mkdir -p "$sub"
+make_part "$sub/CUSA00011_0.pkg" 4096 3 magic
+make_part "$sub/CUSA00011_1.pkg" 4096 4
 chmod 000 "$sub"
-run_tool -i "$hidden" --overwrite
+run_tool -i "$hidden" -r --overwrite
 chmod 755 "$sub"
-# SPEC 12: an entry that cannot be read is skipped, not fatal.
 assert_eq 0 "$EXIT_CODE" "an unlistable sub-directory does not abort the scan"
+assert_eq 8192 "$(wc -c < "$hidden/CUSA00008-merged.pkg" 2>/dev/null || echo -1)" "the readable set beside it still merged"
+case "$OUTPUT" in *unreadable-subdir*) r=0;; *) r=1;; esac
+assert_true "$r" "the unlistable sub-directory is named"
 
 # --- 9. more than 2 GiB ------------------------------------------------------
 section "[9] more than 2 GiB (64-bit size regression)"

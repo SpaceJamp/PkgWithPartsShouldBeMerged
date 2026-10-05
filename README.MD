@@ -261,8 +261,8 @@ CI builds and tests Windows x64, Windows x86 and Linux.
 
 - `tests/smoke_test.ps1` / `tests/smoke_test.sh` - every exit path: 73 checks on
   Windows, 60 on POSIX (the byte-comparison helper reports one check less there).
-- `tests/robustness_test.ps1` / `tests/robustness_test.sh` — 27 checks on
-  Windows, 24 on POSIX, with hostile input and a merge up to 2.5 GiB.
+- `tests/robustness_test.ps1` / `tests/robustness_test.sh` - 27 checks on
+  Windows, 26 on POSIX, with hostile input and a merge up to 2.5 GiB.
 - `tools/verify_binary.py` — asserts a built binary has no debug-CRT dependencies
   and carries ASLR, DEP and Control Flow Guard.
 
